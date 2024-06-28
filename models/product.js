@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { countProductsByCategory } from '../middlewares/aggregations.js';
+import { DOSAGE_FORM } from '../constants/index.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -21,7 +22,18 @@ const productSchema = new Schema(
       required: [true, 'Please provide product description'],
     },
     nutritionFacts: {
-      type: String,
+      type: {
+        servingSize: String,
+        servingPerContainer: String,
+        ingredients: [
+          {
+            name: String,
+            amountPerServing: String,
+            dailyValue: String,
+          },
+        ],
+        otherIngredients: [{ name: String }],
+      },
       required: [true, "Please provide product's nutrition Facts"],
     },
     images: {
@@ -50,7 +62,7 @@ const productSchema = new Schema(
     },
     itemForm: {
       type: String,
-      enum: ['tablets', 'capsules', 'liquid', 'powders', 'oral', 'injection'],
+      enum: DOSAGE_FORM,
       required: [true, 'Please provide product Form'],
     },
     quantity: {

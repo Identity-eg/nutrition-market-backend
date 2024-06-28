@@ -31,7 +31,7 @@ export const register = async (req, res) => {
   });
 
   // Create secure cookie with refresh token
-  res.cookie('ishop-refresh-token', refreshToken, {
+  res.cookie('ident-refresh-token', refreshToken, {
     httpOnly: true, //accessible only by web server
     sameSite: 'None',
     secure: process.env.NODE_ENV === 'production',
@@ -75,10 +75,16 @@ export const login = async (req, res) => {
   });
 
   // Create secure cookie with refresh token
-  res.cookie('ishop-refresh-token', refreshToken, {
+  res.cookie('ident-refresh-token', refreshToken, {
     httpOnly: true, //accessible only by web server
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
+  });
+
+  res.cookie('ident-auth-flag', 'true', {
+    httpOnly: true, //accessible only by web server
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 30, //cookie expiry: set to match access Token
   });
 
   res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
@@ -88,12 +94,12 @@ export const login = async (req, res) => {
 export const refresh = async (req, res) => {
   const cookies = req.cookies;
   // console.log({ cookies: req.cookies });
-  if (!cookies['ishop-refresh-token'])
+  if (!cookies['ident-refresh-token'])
     throw new CustomError.UnauthenticatedError(
       'Unauthorized you do not have a cookie'
     );
 
-  const refreshToken = cookies['ishop-refresh-token'];
+  const refreshToken = cookies['ident-refresh-token'];
 
   try {
     const { _id: userId } = jwt.verify(
@@ -109,6 +115,12 @@ export const refresh = async (req, res) => {
       expiresIn: '30m',
     });
 
+    res.cookie('ident-auth-flag', 'true', {
+      httpOnly: true, //accessible only by web server
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 30, //cookie expiry: set to match access Token
+    });
+
     return res.json({ accessToken });
   } catch (error) {
     throw new CustomError.UnauthorizedError(`Forbidden ${error.message}`);
@@ -118,9 +130,14 @@ export const refresh = async (req, res) => {
 // LOGOUT ############################
 export const logout = (req, res) => {
   const cookies = req.cookies;
-  if (!cookies['ishop-refresh-token'])
+  if (!cookies['ident-refresh-token'])
     return res.status(StatusCodes.NO_CONTENT).json({ message: 'No content' });
-  res.clearCookie('ishop-refresh-token', {
+  res.clearCookie('ident-refresh-token', {
+    httpOnly: true,
+    sameSite: false,
+    secure: process.env.NODE_ENV === 'production',
+  });
+  res.clearCookie('ident-refresh-token', {
     httpOnly: true,
     sameSite: false,
     secure: process.env.NODE_ENV === 'production',
@@ -154,7 +171,7 @@ export const forgotPassword = async (req, res) => {
       to: email,
       subject: 'Your Password Reset token (valid for 10 minutes)',
       message,
-      html: `<a href="${resetUrl}"></a>`
+      html: `<a href="${resetUrl}"></a>`,
     });
 
     res.status(StatusCodes.OK).json({ msg: 'Token sent to email' });
@@ -188,7 +205,7 @@ export const resetPassword = async (req, res) => {
   user.resetPasswordToken = undefined;
   user.resetPasswordTokenExpiration = undefined;
   await user.save();
-  
+
   const tokenUser = createTokenUser(user);
   const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: '30m',
@@ -198,7 +215,7 @@ export const resetPassword = async (req, res) => {
   });
 
   // Create secure cookie with refresh token
-  res.cookie('ishop-refresh-token', refreshToken, {
+  res.cookie('ident-refresh-token', refreshToken, {
     httpOnly: true, //accessible only by web server
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
