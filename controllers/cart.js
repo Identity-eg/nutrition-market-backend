@@ -5,6 +5,7 @@ import CustomError from '../errors/index.js';
 
 // ################# Get Cart #################
 export const getCart = async (req, res) => {
+  console.log("hereeeee");
   const { _id: userId } = req.user;
   const cart = await Cart.findOne({ user: userId }).populate({
     path: 'items.product items.selectedColor',
@@ -14,7 +15,7 @@ export const getCart = async (req, res) => {
   if (!cart) {
     throw new CustomError.NotFoundError(`No cart for this userid : ${userId}`);
   }
-  return res.status(StatusCodes.CREATED).json({ cart });
+  return res.status(StatusCodes.OK).json({ cart });
 };
 
 // ################# Add To Cart #################

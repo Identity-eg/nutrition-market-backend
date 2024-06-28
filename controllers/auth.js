@@ -1,8 +1,10 @@
-import User from '../models/user.js';
+import jwt from 'jsonwebtoken';
 import { StatusCodes } from 'http-status-codes';
+import crypto from 'crypto';
+import User from '../models/user.js';
 import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
-import jwt from 'jsonwebtoken';
+import sendEmail from '../utils/email.js';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
@@ -30,10 +32,6 @@ export const register = async (req, res) => {
 
   // Create secure cookie with refresh token
   res.cookie('ishop-refresh-token', refreshToken, {
-    // domain:
-    //   process.env.NODE_ENV === 'production'
-    //     ? '.vercel.app'
-    //     : 'localhost',
     httpOnly: true, //accessible only by web server
     sameSite: 'None',
     secure: process.env.NODE_ENV === 'production',
@@ -78,12 +76,7 @@ export const login = async (req, res) => {
 
   // Create secure cookie with refresh token
   res.cookie('ishop-refresh-token', refreshToken, {
-    // domain:
-    //   process.env.NODE_ENV === 'production'
-    //     ? '.vercel.app'
-    //     : 'localhost',
     httpOnly: true, //accessible only by web server
-    // sameSite: 'None',
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
   });
@@ -133,4 +126,82 @@ export const logout = (req, res) => {
     secure: process.env.NODE_ENV === 'production',
   });
   res.json({ message: 'Cookie cleared' });
+};
+
+// FORGOT PASSWORD ########################################
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    throw new CustomError.BadRequestError('Please provide email address');
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new CustomError.NotFoundError(
+      'There is no User with this email address'
+    );
+  }
+
+  const resetToken = user.createResetPasswordToken();
+  await user.save();
+
+  const resetUrl = `${process.env.ORIGIN}/reset-password/${resetToken}`;
+
+  const message = `message ${resetUrl}`;
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Your Password Reset token (valid for 10 minutes)',
+      message,
+    });
+
+    res.status(StatusCodes.OK).json({ msg: 'Token sent to email' });
+  } catch (error) {
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpiration = undefined;
+    await user.save();
+    throw new CustomError.CustomAPIError(
+      'There was an Error sending email address'
+    );
+  }
+};
+
+// RESET PASSWORD ########################################
+export const resetPassword = async (req, res) => {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordTokenExpiration: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new CustomError.BadRequestError('Token is invalid or has expired');
+  }
+
+  user.password = req.body.password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordTokenExpiration = undefined;
+  await user.save();
+  
+  const tokenUser = createTokenUser(user);
+  const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: '30m',
+  });
+  const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: '1d',
+  });
+
+  // Create secure cookie with refresh token
+  res.cookie('ishop-refresh-token', refreshToken, {
+    httpOnly: true, //accessible only by web server
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
+  });
+
+  res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
 };

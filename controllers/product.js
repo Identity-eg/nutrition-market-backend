@@ -28,7 +28,7 @@ export const getAllProducts = async (req, res) => {
     category,
     itemForm,
   } = req.query;
-
+console.log("=>>>", req);
   let skip = (Number(page) - 1) * Number(limit);
   let queryObject = { ...req.query };
   // Name

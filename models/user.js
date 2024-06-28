@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import pkg from 'validator';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const { model, Schema } = mongoose;
 const { isEmail } = pkg;
@@ -42,11 +43,23 @@ const userSchema = new Schema(
     },
     addresses: [AddressSchema],
     ordersCount: { type: Number, default: 0 },
+    resetPasswordToken: String,
+    resetPasswordTokenExpiration: Date,
   },
   {
     methods: {
       comparePassword: async function (enteredPassword) {
         return await bcrypt.compare(enteredPassword, this.password);
+      },
+      createResetPasswordToken: function () {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        this.resetPasswordToken = crypto
+          .createHash('sha256')
+          .update(resetToken)
+          .digest('hex');
+        
+        this.resetPasswordTokenExpiration = Date.now() + 10 * 60 * 1000;
+        return resetToken;
       },
     },
     timestamps: true,
