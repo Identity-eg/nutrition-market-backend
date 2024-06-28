@@ -17,6 +17,6 @@ router.get('/refresh', refresh);
 router.get('/logout', logout);
 
 router.post('/forgot-password', forgotPassword);
-router.patch('/reset-password/:token', resetPassword);
+router.put('/reset-password/:token', resetPassword);
 
 export default router;

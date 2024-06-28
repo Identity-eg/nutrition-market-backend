@@ -15,22 +15,23 @@ import {
   updateUserPassword,
 } from '../controllers/user.js';
 
-router
-  .route('/')
-  .get(authenticateUser, authorizePermissions('admin'), getAllUsers);
+router.get('/', authenticateUser, authorizePermissions('admin'), getAllUsers);
 
-router.route('/getMe').get(authenticateUser, showCurrentUser);
-router.route('/updateUserPassword').patch(authenticateUser, updateUserPassword);
+router.get('/getMe', authenticateUser, showCurrentUser);
+router.put('/updateUserPassword', authenticateUser, updateUserPassword);
 
-router.route('/address').post(authenticateUser, addAddress);
-router
-  .route('/block')
-  .put(authenticateUser, authorizePermissions('admin'), blockUser);
+router.post('/address', authenticateUser, addAddress);
+
+router.put(
+  '/block',
+  authenticateUser,
+  authorizePermissions('admin'),
+  blockUser
+);
 
 router
   .route('/:id')
   .get(authenticateUser, getSingleUser)
   .put(authenticateUser, updateUser);
-
 
 export default router;

@@ -23,7 +23,7 @@ export const getAllUsers = async (req, res) => {
       ? true
       : false;
 
-      console.log(arrOfBoolean);
+    console.log(arrOfBoolean);
     queryObject.blocked = { $in: arrOfBoolean };
   }
 
@@ -86,12 +86,14 @@ export const updateUser = async (req, res) => {
 
   chechPermissions(req.user, id);
 
-  await User.findOneAndUpdate(
+  const updatedUser = await User.findOneAndUpdate(
     { _id: id },
     { email, name },
     { runValidators: true }
   );
-  res.status(StatusCodes.OK).json({ msg: 'User updated successfully' });
+  res
+    .status(StatusCodes.OK)
+    .json({ msg: 'User updated successfully', user: updatedUser });
 };
 
 // BLOCK USER #########################################
@@ -114,14 +116,14 @@ export const updateUserPassword = async (req, res) => {
   if (!oldPassword || !newPassword) {
     throw new CustomError.BadRequestError('Please provide both values');
   }
-  const user = await User.findOne({ _id: req.user._id });
+  const user = await User.findById(req.user._id);
 
   const isPasswordCorrect = await user.comparePassword(oldPassword);
   if (!isPasswordCorrect) {
     throw new CustomError.UnauthenticatedError('Invalid Credentials');
   }
   user.password = newPassword;
-
   await user.save();
+
   res.status(StatusCodes.OK).json({ msg: 'Success! Password Updated.' });
 };

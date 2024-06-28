@@ -57,7 +57,7 @@ const userSchema = new Schema(
           .createHash('sha256')
           .update(resetToken)
           .digest('hex');
-        
+
         this.resetPasswordTokenExpiration = Date.now() + 10 * 60 * 1000;
         return resetToken;
       },
@@ -69,11 +69,12 @@ const userSchema = new Schema(
 );
 
 // Fire a function before doc saved to db
-userSchema.pre('save', async function () {
+userSchema.pre('save', async function (next) {
   // console.log('this.modifiedPaths()', this.modifiedPaths());
-  if (!this.isModified('password')) return;
+  if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 const User = model('User', userSchema);

@@ -147,13 +147,14 @@ export const forgotPassword = async (req, res) => {
 
   const resetUrl = `${process.env.ORIGIN}/reset-password/${resetToken}`;
 
-  const message = `message ${resetUrl}`;
+  const message = `message`;
 
   try {
     await sendEmail({
       to: email,
       subject: 'Your Password Reset token (valid for 10 minutes)',
       message,
+      html: `<a href="${resetUrl}"></a>`
     });
 
     res.status(StatusCodes.OK).json({ msg: 'Token sent to email' });
