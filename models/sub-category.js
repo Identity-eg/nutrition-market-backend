@@ -20,5 +20,5 @@ const subCategorySchema = new Schema({
   productsCount: { type: Number, default: 0 },
 });
 
-const SubCategory = model('SubCategory', subCategorySchema)
+const SubCategory = model('SubCategory', subCategorySchema);
 export default SubCategory;

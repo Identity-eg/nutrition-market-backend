@@ -28,7 +28,7 @@ export const getAllProducts = async (req, res) => {
     category,
     itemForm,
   } = req.query;
-console.log("=>>>", req);
+
   let skip = (Number(page) - 1) * Number(limit);
   let queryObject = { ...req.query };
   // Name
@@ -49,7 +49,7 @@ console.log("=>>>", req);
   }
   // Item Form
   if (queryObject.itemForm) {
-    queryObject.itemForm =  { $in: itemForm };
+    queryObject.itemForm = { $in: itemForm };
   }
   // Category
   if (queryObject.category) {
@@ -74,7 +74,7 @@ console.log("=>>>", req);
       select: 'name slug',
       options: { _recursed: true },
     });
-  
+
   const productsCount = await Product.countDocuments(queryObject);
   const lastPage = Math.ceil(productsCount / limit);
   res.status(StatusCodes.OK).json({

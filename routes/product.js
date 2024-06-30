@@ -10,16 +10,13 @@ import {
   updateProduct,
   deleteProduct,
   uploadImage,
-  getSimilarProducts
+  getSimilarProducts,
 } from '../controllers/product.js';
 import { getSingleProductReviews } from '../controllers/review.js';
 
 const router = Router();
 
-router
-  .route('/')
-  .post(createProduct)
-  .get(getAllProducts);
+router.route('/').post(createProduct).get(getAllProducts);
 
 router
   .route('/uploadImage')
@@ -33,6 +30,5 @@ router
 
 router.route('/:id/reviews').get(getSingleProductReviews);
 router.route('/:id/similar').get(getSimilarProducts);
-
 
 export default router;

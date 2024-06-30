@@ -67,5 +67,5 @@ reviewSchema.post('remove', async function () {
   await this.constructor.calculateAverageRating(this.product);
 });
 
-const Review = model('Review', reviewSchema)
+const Review = model('Review', reviewSchema);
 export default Review;

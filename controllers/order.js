@@ -153,4 +153,3 @@ export const updateOrder = async (req, res) => {
 
   res.status(StatusCodes.OK).json({ order });
 };
-

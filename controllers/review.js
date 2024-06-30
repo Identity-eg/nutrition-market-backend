@@ -35,7 +35,7 @@ export const getAllReviews = async (req, res) => {
   let { page = 1, limit = 10 } = req.query;
   let skip = (Number(page) - 1) * Number(limit);
   const queryObject = { ...req.query };
-// console.log({queryObject});
+  // console.log({queryObject});
   // Pagination & Sort
   delete queryObject.page;
   delete queryObject.limit;

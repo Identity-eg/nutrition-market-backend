@@ -1,11 +1,9 @@
 import jwt from 'jsonwebtoken';
 
 export const attachCookiesToResponse = ({ res, user }) => {
-  const accessToken = jwt.sign(
-    user,
-    process.env.ACCESS_TOKEN_SECRET,
-    {expiresIn: '10s'},
-  );
+  const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: '10s',
+  });
 
   const oneDay = 1000 * 60 * 60 * 24;
 

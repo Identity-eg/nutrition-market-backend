@@ -1,11 +1,10 @@
+import { StatusCodes } from 'http-status-codes';
 import Cart from '../models/cart.js';
 import Product from '../models/product.js';
-import { StatusCodes } from 'http-status-codes';
 import CustomError from '../errors/index.js';
 
 // ################# Get Cart #################
 export const getCart = async (req, res) => {
-  console.log("hereeeee");
   const { _id: userId } = req.user;
   const cart = await Cart.findOne({ user: userId }).populate({
     path: 'items.product items.selectedColor',

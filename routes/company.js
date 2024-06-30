@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authorizePermissions } from '../middlewares/full-auth.js';
 import { authenticateUser } from '../middlewares/full-auth.js';
-import * as controllers from '../controllers/brand.js';
+import * as controllers from '../controllers/company.js';
 
 const router = Router();
 router
@@ -9,21 +9,21 @@ router
   .post(
     authenticateUser,
     authorizePermissions('admin'),
-    controllers.createBrand
+    controllers.createCompany
   )
-  .get(controllers.getBrands);
+  .get(controllers.getCompanys);
 
 router
   .route('/:id')
   .patch(
     authenticateUser,
     authorizePermissions('admin'),
-    controllers.updateBrand
+    controllers.updateCompany
   )
   .delete(
     authenticateUser,
     authorizePermissions('admin'),
-    controllers.deleteBrand
+    controllers.deleteCompany
   );
 
 export default router;

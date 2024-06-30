@@ -5,6 +5,10 @@ import User from '../models/user.js';
 import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
+import {
+  ACCESS_COOKIE_OPTIONS,
+  REFRESH_COOKIE_OPTIONS,
+} from '../constants/index.js';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
@@ -15,13 +19,12 @@ export const register = async (req, res) => {
   if (emailUser) {
     throw new CustomError.BadRequestError('Email is already taken');
   }
-  // first registered user is an admin
+
   const isFirstAccount = (await User.countDocuments({})) === 0;
   const role = isFirstAccount ? 'admin' : 'user';
 
-  // Create the user
   const user = await User.create({ email, name, password, role });
-  // Create Token User
+
   const tokenUser = createTokenUser(user);
   const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: '30m',
@@ -30,15 +33,14 @@ export const register = async (req, res) => {
     expiresIn: '1d',
   });
 
-  // Create secure cookie with refresh token
-  res.cookie('ident-refresh-token', refreshToken, {
-    httpOnly: true, //accessible only by web server
-    sameSite: 'None',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match rT
-  });
+  // Create secure cookies
+  res.cookie(
+    process.env.REFRESH_TOKEN_NAME,
+    refreshToken,
+    REFRESH_COOKIE_OPTIONS
+  );
+  res.cookie(process.env.ACCESS_TOKEN_NAME, accessToken, ACCESS_COOKIE_OPTIONS);
 
-  // Return the user
   res.status(StatusCodes.CREATED).json({ user: tokenUser, accessToken });
 };
 
@@ -74,18 +76,13 @@ export const login = async (req, res) => {
     expiresIn: '1d',
   });
 
-  // Create secure cookie with refresh token
-  res.cookie('ident-refresh-token', refreshToken, {
-    httpOnly: true, //accessible only by web server
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
-  });
-
-  res.cookie('ident-auth-flag', 'true', {
-    httpOnly: true, //accessible only by web server
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 30, //cookie expiry: set to match access Token
-  });
+  // Create secure cookies
+  res.cookie(
+    process.env.REFRESH_TOKEN_NAME,
+    refreshToken,
+    REFRESH_COOKIE_OPTIONS
+  );
+  res.cookie(process.env.ACCESS_TOKEN_NAME, accessToken, ACCESS_COOKIE_OPTIONS);
 
   res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
 };
@@ -94,12 +91,12 @@ export const login = async (req, res) => {
 export const refresh = async (req, res) => {
   const cookies = req.cookies;
   // console.log({ cookies: req.cookies });
-  if (!cookies['ident-refresh-token'])
+  if (!cookies[process.env.REFRESH_TOKEN_NAME])
     throw new CustomError.UnauthenticatedError(
       'Unauthorized you do not have a cookie'
     );
 
-  const refreshToken = cookies['ident-refresh-token'];
+  const refreshToken = cookies[process.env.REFRESH_TOKEN_NAME];
 
   try {
     const { _id: userId } = jwt.verify(
@@ -114,12 +111,11 @@ export const refresh = async (req, res) => {
     const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
       expiresIn: '30m',
     });
-
-    res.cookie('ident-auth-flag', 'true', {
-      httpOnly: true, //accessible only by web server
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 30, //cookie expiry: set to match access Token
-    });
+    res.cookie(
+      process.env.ACCESS_TOKEN_NAME,
+      accessToken,
+      ACCESS_COOKIE_OPTIONS
+    );
 
     return res.json({ accessToken });
   } catch (error) {
@@ -130,18 +126,10 @@ export const refresh = async (req, res) => {
 // LOGOUT ############################
 export const logout = (req, res) => {
   const cookies = req.cookies;
-  if (!cookies['ident-refresh-token'])
+  if (!cookies[process.env.REFRESH_TOKEN_NAME])
     return res.status(StatusCodes.NO_CONTENT).json({ message: 'No content' });
-  res.clearCookie('ident-refresh-token', {
-    httpOnly: true,
-    sameSite: false,
-    secure: process.env.NODE_ENV === 'production',
-  });
-  res.clearCookie('ident-refresh-token', {
-    httpOnly: true,
-    sameSite: false,
-    secure: process.env.NODE_ENV === 'production',
-  });
+  res.clearCookie(process.env.REFRESH_TOKEN_NAME);
+  res.clearCookie(process.env.ACCESS_TOKEN_NAME);
   res.json({ message: 'Cookie cleared' });
 };
 
@@ -214,12 +202,13 @@ export const resetPassword = async (req, res) => {
     expiresIn: '1d',
   });
 
-  // Create secure cookie with refresh token
-  res.cookie('ident-refresh-token', refreshToken, {
-    httpOnly: true, //accessible only by web server
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
-  });
+  // Create secure cookies
+  res.cookie(
+    process.env.REFRESH_TOKEN_NAME,
+    refreshToken,
+    REFRESH_COOKIE_OPTIONS
+  );
+  res.cookie(process.env.ACCESS_TOKEN_NAME, accessToken, ACCESS_COOKIE_OPTIONS);
 
   res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
 };

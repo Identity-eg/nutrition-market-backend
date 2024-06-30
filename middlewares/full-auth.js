@@ -7,11 +7,11 @@ export const authenticateUser = async (req, res, next) => {
     throw new CustomError.UnauthenticatedError('Authentication invalid');
   }
   const token = authHeader.split(' ')[1];
-// console.log({token});
+  // console.log({token});
   if (!token) {
     throw new CustomError.UnauthenticatedError('Authentication invalid');
   }
-  
+
   try {
     const { name, _id, role } = jwt.verify(
       token,

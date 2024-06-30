@@ -1,3 +1,4 @@
+import CustomAPIError from '../errors/custom-api.js';
 import Category from '../models/category.js';
 import Order from '../models/order.js';
 import Product from '../models/product.js';
@@ -51,4 +52,4 @@ export async function countProductsByCategory() {
   } catch (error) {
     throw new CustomAPIError.BadRequestError(error);
   }
-};
+}

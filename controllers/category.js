@@ -1,11 +1,11 @@
-import Category from "../models/category.js";
-import { StatusCodes } from "http-status-codes";
-import CustomError from "../errors/index.js";
-import slugify from "slugify";
+import Category from '../models/category.js';
+import { StatusCodes } from 'http-status-codes';
+import CustomError from '../errors/index.js';
+import slugify from 'slugify';
 
 // ################# Create Category #################
 export const createCategory = async (req, res) => {
-  req.body.slug = slugify(req.body.name);
+  req.body.slug = slugify(req.body.name, { lower: true });
 
   const category = await Category.create(req.body);
   res.status(StatusCodes.CREATED).json({ category });
@@ -61,5 +61,5 @@ export const deleteCategory = async (req, res) => {
   }
 
   await category.deleteOne();
-  res.status(StatusCodes.OK).json({ msg: "Success! Category removed." });
+  res.status(StatusCodes.OK).json({ msg: 'Success! Category removed.' });
 };

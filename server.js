@@ -21,7 +21,7 @@ import reviewRoutes from './routes/review.js';
 import orderRoutes from './routes/order.js';
 import categoryRoutes from './routes/category.js';
 import subCategoryRoutes from './routes/sub-category.js';
-import brandRoutes from './routes/brand.js';
+import companyRoutes from './routes/company.js';
 // import colorRoutes from './routes/color.js';
 
 // import custom Middlewares
@@ -66,7 +66,7 @@ app.use(express.static('./public'));
 app.use(fileUpload({ useTempFiles: true }));
 
 // Use Routes
-app.use('/api/auth',authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/carts', cartRoutes);
@@ -74,7 +74,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/sub-categories', subCategoryRoutes);
-app.use('/api/brands', brandRoutes);
+app.use('/api/companies', companyRoutes);
 // app.use('/api/colors', colorRoutes);
 
 app.use(notFoundMiddleware);
