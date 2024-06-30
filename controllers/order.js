@@ -6,10 +6,10 @@ import { StatusCodes } from 'http-status-codes';
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
 
-const fakeStripeAPI = async ({ amount, currency }) => {
-  const client_secret = 'someRandomValue';
-  return { client_secret, amount };
-};
+// const fakeStripeAPI = async ({ amount, currency }) => {
+//   const client_secret = 'someRandomValue';
+//   return { client_secret, amount };
+// };
 
 // CREATE ORDER ################
 export const createOrder = async (req, res) => {

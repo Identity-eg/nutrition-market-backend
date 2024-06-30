@@ -29,7 +29,7 @@ export const addItemToCart = async (req, res) => {
   }
 
   // // use priceAfterDiscount instead of price after add discount feature
-  const { priceAfterDiscount, price } = product;
+  const { price } = product;
 
   // 2) Check if cart exists
   const cart = await Cart.findOne({ user: userId });
