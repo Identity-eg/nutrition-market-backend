@@ -6,6 +6,7 @@ import './config/i18n.js';
 
 // import packages
 // import i18next from 'i18next';
+import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
@@ -58,7 +59,12 @@ app.use(
 );
 
 // app.use(i18nMiddleware.handle(i18next));
-app.use(express.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  })
+);
+app.use(bodyParser.json());
 app.use(trim);
 app.use(cookieParser());
 app.use(express.static('./public'));
@@ -75,7 +81,6 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/sub-categories', subCategoryRoutes);
 app.use('/api/companies', companyRoutes);
-// app.use('/api/colors', colorRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
