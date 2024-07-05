@@ -39,7 +39,6 @@ export const register = async (req, res) => {
     refreshToken,
     REFRESH_COOKIE_OPTIONS
   );
-  res.cookie(process.env.ACCESS_TOKEN_NAME, accessToken, ACCESS_COOKIE_OPTIONS);
 
   res.status(StatusCodes.CREATED).json({ user: tokenUser, accessToken });
 };
@@ -82,7 +81,6 @@ export const login = async (req, res) => {
     refreshToken,
     REFRESH_COOKIE_OPTIONS
   );
-  res.cookie(process.env.ACCESS_TOKEN_NAME, accessToken, ACCESS_COOKIE_OPTIONS);
 
   res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
 };
@@ -111,11 +109,6 @@ export const refresh = async (req, res) => {
     const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
       expiresIn: '30m',
     });
-    res.cookie(
-      process.env.ACCESS_TOKEN_NAME,
-      accessToken,
-      ACCESS_COOKIE_OPTIONS
-    );
 
     return res.json({ accessToken });
   } catch (error) {
@@ -129,7 +122,6 @@ export const logout = (req, res) => {
   if (!cookies[process.env.REFRESH_TOKEN_NAME])
     return res.status(StatusCodes.NO_CONTENT).json({ message: 'No content' });
   res.clearCookie(process.env.REFRESH_TOKEN_NAME);
-  res.clearCookie(process.env.ACCESS_TOKEN_NAME);
   res.json({ message: 'Cookie cleared' });
 };
 
@@ -176,6 +168,12 @@ export const forgotPassword = async (req, res) => {
 
 // RESET PASSWORD ########################################
 export const resetPassword = async (req, res) => {
+  const { password, confirmPassword } = req.body;
+  const matched = password === confirmPassword;
+  if (!matched) {
+    throw new CustomError.BadRequestError('Passwords do not match');
+  }
+
   const hashedToken = crypto
     .createHash('sha256')
     .update(req.params.token)
@@ -190,26 +188,26 @@ export const resetPassword = async (req, res) => {
     throw new CustomError.BadRequestError('Token is invalid or has expired');
   }
 
-  user.password = req.body.password;
+  user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordTokenExpiration = undefined;
   await user.save();
 
-  const tokenUser = createTokenUser(user);
-  const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: '30m',
-  });
-  const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: '1d',
-  });
+  // const tokenUser = createTokenUser(user);
+  // const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
+  //   expiresIn: '30m',
+  // });
+  // const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
+  //   expiresIn: '1d',
+  // });
 
-  // Create secure cookies
-  res.cookie(
-    process.env.REFRESH_TOKEN_NAME,
-    refreshToken,
-    REFRESH_COOKIE_OPTIONS
-  );
-  res.cookie(process.env.ACCESS_TOKEN_NAME, accessToken, ACCESS_COOKIE_OPTIONS);
+  // // Create secure cookies
+  // res.cookie(
+  //   process.env.REFRESH_TOKEN_NAME,
+  //   refreshToken,
+  //   REFRESH_COOKIE_OPTIONS
+  // );
 
-  res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
+  // res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
+  res.status(StatusCodes.OK).json({ msg: 'Password updated succussfully' });
 };

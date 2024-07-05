@@ -6,7 +6,6 @@ import './config/i18n.js';
 
 // import packages
 // import i18next from 'i18next';
-import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
@@ -59,12 +58,8 @@ app.use(
 );
 
 // app.use(i18nMiddleware.handle(i18next));
-app.use(
-  bodyParser.urlencoded({
-    extended: true,
-  })
-);
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(trim);
 app.use(cookieParser());
 app.use(express.static('./public'));
