@@ -82,7 +82,9 @@ export const login = async (req, res) => {
     REFRESH_COOKIE_OPTIONS
   );
 
-  res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
+  res
+    .status(StatusCodes.OK)
+    .json({ user: tokenUser, accessToken, refreshToken });
 };
 
 // REFRESH TOKEN #####################
