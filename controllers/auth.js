@@ -5,10 +5,7 @@ import User from '../models/user.js';
 import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
-import {
-  ACCESS_COOKIE_OPTIONS,
-  REFRESH_COOKIE_OPTIONS,
-} from '../constants/index.js';
+import { REFRESH_COOKIE_OPTIONS } from '../constants/index.js';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {

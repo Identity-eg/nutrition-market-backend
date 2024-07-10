@@ -13,13 +13,30 @@ export const createCompany = async (req, res) => {
 
 // ################# Get All Company #################
 export const getCompanys = async (req, res) => {
-  const companys = await Company.find({});
-  res.status(StatusCodes.CREATED).json(companys);
+  const companies = await Company.find({});
+  res.status(StatusCodes.OK).json({ companies });
+};
+
+// ################# Get All Company #################
+export const getSingleCompany = async (req, res) => {
+  const { id: companyId } = req.params;
+
+  const company = await Company.findOne({ _id: companyId });
+
+  if (!company) {
+    throw new CustomError.NotFoundError(`No product with id : ${companyId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ company });
 };
 
 // ################# Update Company #################
 export const updateCompany = async (req, res) => {
   const { id: companyId } = req.params;
+
+  if (req.body.name) {
+    req.body.slug = slugify(req.body.name, { lower: true });
+  }
 
   const company = await Company.findOneAndUpdate({ _id: companyId }, req.body, {
     new: true,
@@ -30,7 +47,7 @@ export const updateCompany = async (req, res) => {
     throw new CustomError.NotFoundError(`No company with id : ${companyId}`);
   }
 
-  res.status(StatusCodes.OK).json(company);
+  res.status(StatusCodes.OK).json({ company });
 };
 
 // ################# Delete Company #################
@@ -43,6 +60,6 @@ export const deleteCompany = async (req, res) => {
     throw new CustomError.NotFoundError(`No crand with id : ${companyId}`);
   }
 
-  await company.remove();
+  await company.deleteOne();
   res.status(StatusCodes.OK).json({ msg: 'Success! Company removed.' });
 };

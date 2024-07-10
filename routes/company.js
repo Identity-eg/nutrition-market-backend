@@ -15,6 +15,7 @@ router
 
 router
   .route('/:id')
+  .get(controllers.getSingleCompany)
   .patch(
     authenticateUser,
     authorizePermissions('admin'),

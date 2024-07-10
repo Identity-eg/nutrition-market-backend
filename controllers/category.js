@@ -14,7 +14,7 @@ export const createCategory = async (req, res) => {
 // ################# Get All Category #################
 export const getCategories = async (req, res) => {
   const categories = await Category.find({});
-  res.status(StatusCodes.OK).json(categories);
+  res.status(StatusCodes.OK).json({ categories });
 };
 
 // ################ Get Category ##################
@@ -47,7 +47,9 @@ export const updateCategory = async (req, res) => {
     throw new CustomError.NotFoundError(`No category with id : ${categoryId}`);
   }
 
-  res.status(StatusCodes.OK).json(category);
+  res
+    .status(StatusCodes.OK)
+    .json({ msg: 'Category updated successfully', category });
 };
 
 // ################# Delete Category #################
