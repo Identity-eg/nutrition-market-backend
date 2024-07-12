@@ -41,7 +41,12 @@ export const getAllProducts = async (req, res) => {
   }
   // Price
   if (queryObject.price) {
-    queryObject.price = { $gte: price[0], $lte: price[1] };
+    const from = queryObject.price.split('-')[0];
+    const to = queryObject.price.split('-')[1];
+    queryObject.price = {
+      ...(from && { $gte: from }),
+      ...(to && { $lte: to }),
+    };
   }
   // Company
   if (queryObject.company) {

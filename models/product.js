@@ -56,8 +56,8 @@ const productSchema = new Schema(
       required: [true, 'Please provide product category'],
     },
     company: {
-      type: String,
-      enum: ['polygon', 'biovac', 'test'],
+      type: ObjectId,
+      ref: 'Company',
       required: [true, 'Please provide product company'],
     },
     itemForm: {
