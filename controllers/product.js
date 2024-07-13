@@ -26,38 +26,39 @@ export const getAllProducts = async (req, res) => {
     price,
     company,
     category,
-    itemForm,
+    dosageForm,
   } = req.query;
 
   let skip = (Number(page) - 1) * Number(limit);
-  let queryObject = { ...req.query };
+  let queryObject = {};
   // Name
-  if (queryObject.name) {
+  if (name) {
     queryObject.name = { $regex: name, $options: 'i' };
   }
   // Average Rating
-  if (queryObject.averageRating) {
+  if (averageRating) {
     queryObject.averageRating = { $gte: averageRating };
   }
   // Price
-  if (queryObject.price) {
-    const from = queryObject.price.split('-')[0];
-    const to = queryObject.price.split('-')[1];
+  if (price) {
+    const from = price.split('-')[0];
+    const to = price.split('-')[1];
+
     queryObject.price = {
       ...(from && { $gte: from }),
       ...(to && { $lte: to }),
     };
   }
   // Company
-  if (queryObject.company) {
+  if (company) {
     queryObject.company = { $in: company };
   }
   // Item Form
-  if (queryObject.itemForm) {
-    queryObject.itemForm = { $in: itemForm };
+  if (dosageForm) {
+    queryObject.dosageForm = { $in: dosageForm };
   }
   // Category
-  if (queryObject.category) {
+  if (category) {
     queryObject.category = { $elemMatch: { $in: category } };
   }
   // // Sizes
@@ -65,17 +66,12 @@ export const getAllProducts = async (req, res) => {
   //   queryObject.sizes = { $elemMatch: { $in: sizes } };
   // }
 
-  // Pagination & Sort
-  delete queryObject.page;
-  delete queryObject.limit;
-  delete queryObject.sort;
-
   const products = await Product.find(queryObject)
     .sort(sort)
     .skip(skip)
     .limit(limit)
     .populate({
-      path: 'category',
+      path: 'category company dosageForm',
       select: 'name slug',
       options: { _recursed: true },
     });
@@ -101,7 +97,7 @@ export const getSingleProduct = async (req, res) => {
       populate: { path: 'user', select: 'name' },
     },
     {
-      path: 'category',
+      path: 'category company dosageForm',
       select: 'name',
       options: { _recursed: true },
     },
@@ -117,6 +113,7 @@ export const getSingleProduct = async (req, res) => {
 // ######################################################
 
 export const updateProduct = async (req, res) => {
+  console.log();
   const { id: productId } = req.params;
 
   if (req.body.name) {
@@ -208,7 +205,7 @@ export const getSimilarProducts = async (req, res) => {
   })
     .limit(limit)
     .populate({
-      path: 'brand category subCategory colors',
+      path: 'category company dosageForm',
       select: 'name slug',
       options: { _recursed: true },
     });
@@ -221,7 +218,7 @@ export const getSimilarProducts = async (req, res) => {
     })
       .limit(limit - productsBySub.length)
       .populate({
-        path: 'brand category subCategory colors',
+        path: 'category company dosageForm',
         select: 'name slug',
         options: { _recursed: true },
       });

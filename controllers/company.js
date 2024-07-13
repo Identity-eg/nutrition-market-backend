@@ -57,7 +57,7 @@ export const deleteCompany = async (req, res) => {
   const company = await Company.findOne({ _id: companyId });
 
   if (!company) {
-    throw new CustomError.NotFoundError(`No crand with id : ${companyId}`);
+    throw new CustomError.NotFoundError(`No company with id : ${companyId}`);
   }
 
   await company.deleteOne();

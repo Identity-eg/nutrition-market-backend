@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { countProductsByCategory } from '../middlewares/aggregations.js';
-import { DOSAGE_FORM } from '../constants/index.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -60,10 +59,22 @@ const productSchema = new Schema(
       ref: 'Company',
       required: [true, 'Please provide product company'],
     },
-    itemForm: {
-      type: String,
-      enum: DOSAGE_FORM,
+    dosageForm: {
+      type: ObjectId,
+      ref: 'DosageForm',
       required: [true, 'Please provide product Form'],
+    },
+    directionOfUse: {
+      type: String,
+    },
+    warnings: {
+      type: String,
+    },
+    storageConditions: {
+      type: String,
+    },
+    NFSA_REG_NO: {
+      type: String,
     },
     quantity: {
       type: Number,
