@@ -198,6 +198,7 @@ export const getSimilarProducts = async (req, res) => {
   let { limit = 3 } = req.query;
   const { id } = req.params;
   const product = await Product.findById(id);
+  console.log(product);
 
   // const productsBySub = await Product.find({
   //   subCategory: product.subCategory._id,
@@ -212,9 +213,9 @@ export const getSimilarProducts = async (req, res) => {
 
   // if (productsBySub.length < limit) {
   const productsByCategory = await Product.find({
-    category: product.category._id,
+    category: { $elemMatch: { $in: product.category } },
     _id: { $ne: id },
-    subCategory: { $ne: product.subCategory._id },
+    // subCategory: { $ne: product.subCategory._id },
   })
     .limit(limit)
     .populate({
