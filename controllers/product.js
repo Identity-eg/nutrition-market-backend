@@ -199,9 +199,22 @@ export const getSimilarProducts = async (req, res) => {
   const { id } = req.params;
   const product = await Product.findById(id);
 
-  const productsBySub = await Product.find({
-    subCategory: product.subCategory._id,
+  // const productsBySub = await Product.find({
+  //   subCategory: product.subCategory._id,
+  //   _id: { $ne: id },
+  // })
+  //   .limit(limit)
+  //   .populate({
+  //     path: 'category company dosageForm',
+  //     select: 'name slug',
+  //     options: { _recursed: true },
+  //   });
+
+  // if (productsBySub.length < limit) {
+  const productsByCategory = await Product.find({
+    category: product.category._id,
     _id: { $ne: id },
+    subCategory: { $ne: product.subCategory._id },
   })
     .limit(limit)
     .populate({
@@ -210,25 +223,13 @@ export const getSimilarProducts = async (req, res) => {
       options: { _recursed: true },
     });
 
-  if (productsBySub.length < limit) {
-    const productsByCategory = await Product.find({
-      category: product.category._id,
-      _id: { $ne: id },
-      subCategory: { $ne: product.subCategory._id },
-    })
-      .limit(limit - productsBySub.length)
-      .populate({
-        path: 'category company dosageForm',
-        select: 'name slug',
-        options: { _recursed: true },
-      });
-
-    return res.json({
-      products: [...productsBySub, ...productsByCategory],
-    });
-  }
-
-  res.json({
-    products: productsBySub,
+  return res.json({
+    // products: [...productsBySub, ...productsByCategory],
+    products: [...productsByCategory],
   });
+  // }
+
+  // res.json({
+  //   products: productsBySub,
+  // });
 };
