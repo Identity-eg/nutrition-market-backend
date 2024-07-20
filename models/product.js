@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
-import { countProductsByCategory } from '../middlewares/aggregations.js';
+import {
+  countProductsByCategory,
+  countProductsByCompany,
+  countProductsByDosageForm,
+} from '../middlewares/aggregations.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -169,6 +173,8 @@ productSchema.post(
   ['save', 'deleteOne', 'findOneAndUpdate'],
   async function () {
     await countProductsByCategory();
+    await countProductsByCompany();
+    await countProductsByDosageForm();
   }
 );
 
