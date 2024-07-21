@@ -11,8 +11,8 @@ import {
   deleteProduct,
   uploadImage,
   getSimilarProducts,
+  getSingleProductReviews,
 } from '../controllers/product.js';
-import { getSingleProductReviews } from '../controllers/review.js';
 
 const router = Router();
 

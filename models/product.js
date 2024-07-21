@@ -115,8 +115,8 @@ const productSchema = new Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    // toJSON: { virtuals: true },
+    // toObject: { virtuals: true },
     statics: {
       // countByCategory: async function () {
       //   const result = await this.aggregate([
@@ -162,12 +162,12 @@ const productSchema = new Schema(
 );
 
 // Set property(reviews) to product object when create it
-productSchema.virtual('reviews', {
-  ref: 'Review',
-  localField: '_id',
-  foreignField: 'product',
-  justOne: false,
-});
+// productSchema.virtual('reviews', {
+//   ref: 'Review',
+//   localField: '_id',
+//   foreignField: 'product',
+//   justOne: false,
+// });
 
 productSchema.post(
   ['save', 'deleteOne', 'findOneAndUpdate'],

@@ -75,7 +75,7 @@ export const getSingleReview = async (req, res) => {
 // ################# Update Review #################
 export const updateReview = async (req, res) => {
   const { id: reviewId } = req.params;
-  const { rating, title, comment } = req.body;
+  const { rating, comment } = req.body;
 
   const review = await Review.findOne({ _id: reviewId });
 
@@ -86,7 +86,6 @@ export const updateReview = async (req, res) => {
   checkPermissions(req.user, review.user);
 
   review.rating = rating;
-  review.title = title;
   review.comment = comment;
 
   await review.save();
@@ -104,13 +103,6 @@ export const deleteReview = async (req, res) => {
   }
 
   checkPermissions(req.user, review.user);
-  await review.remove();
+  await review.deleteOne();
   res.status(StatusCodes.OK).json({ msg: 'Success! Review removed' });
-};
-
-// if you decide to not use virtual
-export const getSingleProductReviews = async (req, res) => {
-  const { id: productId } = req.params;
-  const reviews = await Review.find({ product: productId });
-  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
 };

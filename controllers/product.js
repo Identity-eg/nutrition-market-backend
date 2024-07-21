@@ -5,6 +5,7 @@ import { StatusCodes } from 'http-status-codes';
 import slugify from 'slugify';
 
 import Product from '../models/product.js';
+import Review from '../models/review.js';
 import CustomError from '../errors/index.js';
 
 export const createProduct = async (req, res) => {
@@ -15,7 +16,7 @@ export const createProduct = async (req, res) => {
   res.status(StatusCodes.CREATED).json({ product });
 };
 
-// ######################################################
+// #################### Get All Products ######################
 export const getAllProducts = async (req, res) => {
   let {
     name,
@@ -92,22 +93,31 @@ export const getSingleProduct = async (req, res) => {
   const { id: productId } = req.params;
 
   const product = await Product.findOne({ _id: productId }).populate([
-    {
-      path: 'reviews',
-      populate: { path: 'user', select: 'name' },
-    },
+    // {
+    //   path: 'reviews',
+    //   populate: { path: 'user', select: 'name' },
+    // },
     {
       path: 'category company dosageForm',
       select: 'name',
       options: { _recursed: true },
     },
-  ]); // virtuals
+  ]);
 
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
   }
 
   res.status(StatusCodes.OK).json({ product });
+};
+
+// ######################################################
+
+// if you decide to not use virtual
+export const getSingleProductReviews = async (req, res) => {
+  const { id: productId } = req.params;
+  const reviews = await Review.find({ product: productId });
+  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
 };
 
 // ######################################################
@@ -198,7 +208,6 @@ export const getSimilarProducts = async (req, res) => {
   let { limit = 3 } = req.query;
   const { id } = req.params;
   const product = await Product.findById(id);
-  console.log(product);
 
   // const productsBySub = await Product.find({
   //   subCategory: product.subCategory._id,
