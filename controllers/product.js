@@ -193,7 +193,7 @@ export const uploadImage = async (req, res) => {
   // console.log(req.files);
   const result = await cloudinary.v2.uploader.upload(
     req.files.image.tempFilePath,
-    { use_filename: true, folder: 'elgendy-ecommerce' }
+    { use_filename: true, folder: 'supplement-food' }
   );
 
   fs.unlinkSync(req.files.image.tempFilePath);

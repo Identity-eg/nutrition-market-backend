@@ -23,6 +23,7 @@ import categoryRoutes from './routes/category.js';
 import subCategoryRoutes from './routes/sub-category.js';
 import companyRoutes from './routes/company.js';
 import dosageFormRoutes from './routes/dosageForm.js';
+import imageRoutes from './routes/image.js';
 // import colorRoutes from './routes/color.js';
 
 // import custom Middlewares
@@ -78,6 +79,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/sub-categories', subCategoryRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/dosage-forms', dosageFormRoutes);
+app.use('/api/images', imageRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
