@@ -11,6 +11,10 @@ const reviewSchema = new Schema(
       max: 5,
       required: [true, 'Please provide rating'],
     },
+    title: {
+      type: String,
+      required: [true, 'Please provide review title'],
+    },
     comment: {
       type: String,
       required: [true, 'Please provide review text'],
@@ -63,7 +67,7 @@ reviewSchema.post('save', async function () {
   await this.constructor.calculateAverageRating(this.product);
 });
 
-reviewSchema.post('remove', async function () {
+reviewSchema.post('deleteOne', { document: true }, async function () {
   await this.constructor.calculateAverageRating(this.product);
 });
 
