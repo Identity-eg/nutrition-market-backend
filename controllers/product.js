@@ -116,7 +116,12 @@ export const getSingleProduct = async (req, res) => {
 // if you decide to not use virtual
 export const getSingleProductReviews = async (req, res) => {
   const { id: productId } = req.params;
-  const reviews = await Review.find({ product: productId });
+  const reviews = await Review.find({ product: productId }).populate([
+    {
+      path: 'user',
+      select: 'name',
+    },
+  ]);
   res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
 };
 
