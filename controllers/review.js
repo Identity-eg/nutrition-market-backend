@@ -75,7 +75,7 @@ export const getSingleReview = async (req, res) => {
 // ################# Update Review #################
 export const updateReview = async (req, res) => {
   const { id: reviewId } = req.params;
-  const { rating, comment } = req.body;
+  const { title, rating, comment } = req.body;
 
   const review = await Review.findOne({ _id: reviewId });
 
@@ -86,6 +86,7 @@ export const updateReview = async (req, res) => {
   checkPermissions(req.user, review.user);
 
   review.rating = rating;
+  review.title = title;
   review.comment = comment;
 
   await review.save();
