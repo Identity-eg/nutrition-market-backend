@@ -22,7 +22,7 @@ export const getAllProducts = async (req, res) => {
     name,
     sort,
     page = 1,
-    limit = 10,
+    limit = 12,
     averageRating,
     price,
     company,

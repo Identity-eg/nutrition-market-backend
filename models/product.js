@@ -68,8 +68,9 @@ const productSchema = new Schema(
       ref: 'DosageForm',
       required: [true, 'Please provide product Form'],
     },
-    size: {
+    unitCount: {
       type: Number,
+      required: [true, 'Please provide product unit count'],
     },
     flavor: {
       type: String,

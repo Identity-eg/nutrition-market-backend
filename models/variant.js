@@ -13,7 +13,7 @@ const variantSchema = new Schema(
     name: {
       type: Number,
     },
-    size: { type: Number },
+    unitCount: { type: Number },
     flavor: {
       type: String,
     },
