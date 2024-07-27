@@ -12,7 +12,11 @@ export const createImage = async (req, res) => {
 // ################# Get Images For Specific Path #################
 export const getImages = async (req, res) => {
   const { path } = req.query;
-  const images = await Image.find({ path });
+  let queryObject = {};
+  if (path) {
+    queryObject.path = path;
+  }
+  const images = await Image.find(queryObject);
   res.status(StatusCodes.OK).json({ images });
 };
 
