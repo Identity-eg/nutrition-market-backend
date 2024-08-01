@@ -18,11 +18,11 @@ import {
 router.get('/', authenticateUser, authorizePermissions('admin'), getAllUsers);
 
 router.get('/getMe', authenticateUser, showCurrentUser);
-router.put('/updateUserPassword', authenticateUser, updateUserPassword);
+router.patch('/updateUserPassword', authenticateUser, updateUserPassword);
 
 router.post('/address', authenticateUser, addAddress);
 
-router.put(
+router.patch(
   '/block',
   authenticateUser,
   authorizePermissions('admin'),
@@ -32,6 +32,6 @@ router.put(
 router
   .route('/:id')
   .get(authenticateUser, getSingleUser)
-  .put(authenticateUser, updateUser);
+  .patch(authenticateUser, updateUser);
 
 export default router;

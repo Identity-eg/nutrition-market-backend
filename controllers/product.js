@@ -195,16 +195,32 @@ export const uploadImageLocal = async (req, res) => {
 // ######################################################
 
 export const uploadImage = async (req, res) => {
-  // console.log(req.files);
-  const result = await cloudinary.v2.uploader.upload(
-    req.files.image.tempFilePath,
-    { use_filename: true, folder: 'supplement-food' }
-  );
+  console.log('req.files', req.files);
+  const arrayOfImages = Array.isArray(req.files.image)
+    ? req.files.image
+    : [req.files.image];
+  console.log('arrayOfImages', arrayOfImages);
+  const imagesToUpload = arrayOfImages.map(async (img) => {
+    return await cloudinary.v2.uploader.upload(img.tempFilePath, {
+      use_filename: true,
+      folder: 'supplement-food',
+    });
+  });
 
-  fs.unlinkSync(req.files.image.tempFilePath);
+  // arrayOfImages.forEach((img) => {
+  //   fs.unlinkSync(img.tempFilePath);
+  // });
 
-  // console.log(result);
-  res.status(StatusCodes.OK).json({ image: result.secure_url });
+  const results = await Promise.all(imagesToUpload);
+  // fs.unlinkSync(req.files.image.tempFilePath);
+  // const result = await cloudinary.v2.uploader.upload(
+  //   req.files.image.tempFilePath,
+  //   { use_filename: true, folder: 'supplement-food' }
+  // );
+  console.log('results', results);
+  res
+    .status(StatusCodes.OK)
+    .json({ images: results.map((img) => img.secure_url) });
 };
 
 // ###########################################

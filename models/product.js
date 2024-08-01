@@ -8,6 +8,35 @@ import {
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
 
+const variantSchema = new Schema(
+  {
+    name: {
+      type: String,
+    },
+    unitCount: { type: Number },
+    flavor: {
+      type: String,
+    },
+    price: {
+      type: Number,
+      required: [true, 'Please provide product size'],
+    },
+    images: {
+      type: [
+        {
+          url: String,
+          name: String,
+          size: Number,
+        },
+      ],
+      required: [true, 'Please provide product image'],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const productSchema = new Schema(
   {
     name: {
@@ -75,6 +104,7 @@ const productSchema = new Schema(
     flavor: {
       type: String,
     },
+    variants: [variantSchema],
     directionOfUse: {
       type: String,
     },
@@ -95,10 +125,8 @@ const productSchema = new Schema(
       type: Number,
       required: [true, 'Please provide product price'],
     },
-    // itemUnits: Schema.Types.Mixed,
-    freeShipping: {
-      type: Boolean,
-      default: false,
+    priceAfterDiscount: {
+      type: Number,
     },
     numReviews: {
       type: Number,
@@ -107,9 +135,6 @@ const productSchema = new Schema(
     averageRating: {
       type: Number,
       default: 0,
-    },
-    priceAfterDiscount: {
-      type: Number,
     },
     featured: {
       type: Boolean,
@@ -122,8 +147,8 @@ const productSchema = new Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    // toJSON: { virtuals: true },
+    // toObject: { virtuals: true },
     statics: {
       // countByCategory: async function () {
       //   const result = await this.aggregate([
@@ -169,12 +194,12 @@ const productSchema = new Schema(
 );
 
 // Set property(reviews) to product object when create it
-productSchema.virtual('variants', {
-  ref: 'Variant',
-  localField: '_id',
-  foreignField: 'product',
-  justOne: false,
-});
+// productSchema.virtual('reviews', {
+//   ref: 'Review',
+//   localField: '_id',
+//   foreignField: 'product',
+//   justOne: false,
+// });
 
 productSchema.post(
   ['save', 'deleteOne', 'findOneAndUpdate'],

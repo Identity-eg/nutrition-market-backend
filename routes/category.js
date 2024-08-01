@@ -16,7 +16,7 @@ router
 router
   .route('/:id')
   .get(controllers.getSingleCategory)
-  .put(
+  .patch(
     authenticateUser,
     authorizePermissions('admin'),
     controllers.updateCategory

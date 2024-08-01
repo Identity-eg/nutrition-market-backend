@@ -25,7 +25,7 @@ router
 router
   .route('/:id')
   .get(getSingleProduct)
-  .put([authenticateUser, authorizePermissions('admin')], updateProduct)
+  .patch([authenticateUser, authorizePermissions('admin')], updateProduct)
   .delete([authenticateUser, authorizePermissions('admin')], deleteProduct);
 
 router.route('/:id/reviews').get(getSingleProductReviews);
