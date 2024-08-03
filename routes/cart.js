@@ -10,6 +10,8 @@ router
   .post(authenticateUser, controllers.addItemToCart)
   .delete(authenticateUser, controllers.deleteCart);
 
+router.post('/sync', authenticateUser, controllers.syncCart)
+
 router.post('/:itemId/reduce-one', authenticateUser, controllers.reduceByone);
 router.post(
   '/:itemId/increase-one',

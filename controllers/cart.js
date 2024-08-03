@@ -18,18 +18,93 @@ export const getCart = async (req, res) => {
 };
 
 // ################# Add To Cart #################
+// export const addItemToCart = async (req, res) => {
+//   const { _id: userId } = req.user;
+//   const { amount, color, productId, size } = req.body;
+//   // console.log(req.body);
+//   // 1) Check if product doesn't exist
+//   const product = await Product.findById(productId);
+//   if (!product) {
+//     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+//   }
+
+//   // // use priceAfterDiscount instead of price after add discount feature
+//   const { price } = product;
+
+//   // 2) Check if cart exists
+//   const cart = await Cart.findOne({ user: userId });
+//   if (cart) {
+//     // Find item index in the cart
+//     const itemIndex = cart.items.findIndex(
+//       (item) =>
+//         item.product.toString() === productId.toString() &&
+//         item.selectedColor.toString() === color.toString() &&
+//         item.selectedSize.toString() === size.toString()
+//     );
+
+//     if (itemIndex === -1) {
+//       // in case item doesn't exist
+//       cart.items.push({
+//         product: productId,
+//         selectedColor: color,
+//         selectedSize: size,
+//         amount,
+//         totalProductPrice: price * amount,
+//       });
+//       cart.totalItems += amount;
+//       cart.totalPrice += price * amount;
+//     } else {
+//       // in case item exists
+//       cart.items = cart.items.map((item, idx) =>
+//         idx === itemIndex
+//           ? {
+//               ...item,
+//               amount: item.amount + amount,
+//               totalProductPrice: item.totalProductPrice + price * amount,
+//             }
+//           : item
+//       );
+//       cart.totalItems += amount;
+//       cart.totalPrice += price * amount;
+//     }
+//     await cart.save();
+//     return res.status(StatusCodes.CREATED).json({ cart });
+//   }
+
+//   // 3) In case user doesn't have cart, then create new cart for the user
+//   const cartData = {
+//     user: userId,
+//     items: [
+//       {
+//         product: productId,
+//         selectedColor: color,
+//         selectedSize: size,
+//         amount,
+//         totalProductPrice: price * amount,
+//       },
+//     ],
+//     totalItems: amount,
+//     totalPrice: price * amount,
+//   };
+//   // 4) Create new cart
+//   const newCart = await Cart.create(cartData);
+//   // 5) If everything is OK, send cart
+//   return res.status(StatusCodes.CREATED).json({ cart: newCart });
+// };
+
+// #################### Add To Cart ####################
 export const addItemToCart = async (req, res) => {
   const { _id: userId } = req.user;
-  const { amount, color, productId, size } = req.body;
-  // console.log(req.body);
-  // 1) Check if product doesn't exist
+const { amount, variantId, productId } = req.body;
+
+// 1) Check if product doesn't exist
   const product = await Product.findById(productId);
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
   }
 
   // // use priceAfterDiscount instead of price after add discount feature
-  const { price } = product;
+  const { price, priceAfterDiscount } = product;
 
   // 2) Check if cart exists
   const cart = await Cart.findOne({ user: userId });
@@ -38,21 +113,19 @@ export const addItemToCart = async (req, res) => {
     const itemIndex = cart.items.findIndex(
       (item) =>
         item.product.toString() === productId.toString() &&
-        item.selectedColor.toString() === color.toString() &&
-        item.selectedSize.toString() === size.toString()
+        item.selectedVariant.toString() === variantId.toString()
     );
 
     if (itemIndex === -1) {
       // in case item doesn't exist
       cart.items.push({
         product: productId,
-        selectedColor: color,
-        selectedSize: size,
+        selectedVariant: variantId,
         amount,
-        totalProductPrice: price * amount,
+        totalProductPrice: (priceAfterDiscount || price) * amount,
       });
       cart.totalItems += amount;
-      cart.totalPrice += price * amount;
+      cart.totalPrice += (priceAfterDiscount || price) * amount;
     } else {
       // in case item exists
       cart.items = cart.items.map((item, idx) =>
@@ -60,12 +133,12 @@ export const addItemToCart = async (req, res) => {
           ? {
               ...item,
               amount: item.amount + amount,
-              totalProductPrice: item.totalProductPrice + price * amount,
+              totalProductPrice: item.totalProductPrice + (priceAfterDiscount || price) * amount,
             }
           : item
       );
       cart.totalItems += amount;
-      cart.totalPrice += price * amount;
+      cart.totalPrice += (priceAfterDiscount || price) * amount;
     }
     await cart.save();
     return res.status(StatusCodes.CREATED).json({ cart });
@@ -77,20 +150,25 @@ export const addItemToCart = async (req, res) => {
     items: [
       {
         product: productId,
-        selectedColor: color,
-        selectedSize: size,
+        selectedVariant: variantId,
         amount,
-        totalProductPrice: price * amount,
+        totalProductPrice: (priceAfterDiscount || price) * amount,
       },
     ],
     totalItems: amount,
-    totalPrice: price * amount,
+    totalPrice: (priceAfterDiscount || price) * amount,
   };
   // 4) Create new cart
   const newCart = await Cart.create(cartData);
   // 5) If everything is OK, send cart
   return res.status(StatusCodes.CREATED).json({ cart: newCart });
-};
+}
+
+// #################### Add To Cart ####################
+export const syncCart = async (req, res) => {
+  const { _id: userId } = req.user;
+  const { cart } = req.body;
+}
 
 // ################# Increase By Amount #################
 export const increaseByone = async (req, res) => {

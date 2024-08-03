@@ -16,11 +16,7 @@ const cartSchema = new Schema(
           type: Schema.Types.ObjectId,
           ref: 'Product',
         },
-        selectedColor: {
-          type: Schema.Types.ObjectId,
-          ref: 'Color',
-        },
-        selectedSize: String,
+        selectedVariant: String,
         amount: {
           type: Number,
           default: 0,
