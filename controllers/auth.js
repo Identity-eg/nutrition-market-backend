@@ -5,7 +5,7 @@ import User from '../models/user.js';
 import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
-import { REFRESH_COOKIE_OPTIONS } from '../constants/index.js';
+import { REFRESH_COOKIE_OPTIONS, USER_ROLES } from '../constants/index.js';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
@@ -18,7 +18,7 @@ export const register = async (req, res) => {
   }
 
   const isFirstAccount = (await User.countDocuments({})) === 0;
-  const role = isFirstAccount ? 'admin' : 'user';
+  const role = isFirstAccount ? USER_ROLES.superAdmin : req.body.role;
 
   const user = await User.create({ email, name, password, role });
 

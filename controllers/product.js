@@ -128,7 +128,6 @@ export const getSingleProductReviews = async (req, res) => {
 // ######################################################
 
 export const updateProduct = async (req, res) => {
-  console.log();
   const { id: productId } = req.params;
 
   if (req.body.name) {

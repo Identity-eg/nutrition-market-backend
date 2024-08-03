@@ -4,12 +4,17 @@ import {
   authorizePermissions,
 } from '../middlewares/full-auth.js';
 import * as orderCont from '../controllers/order.js';
+import { USER_ROLES } from '../constants/index.js';
 const router = Router();
 
 router
   .route('/')
   .post(authenticateUser, orderCont.createOrder)
-  .get(authenticateUser, authorizePermissions('admin'), orderCont.getAllOrders);
+  .get(
+    authenticateUser,
+    authorizePermissions(USER_ROLES.superAdmin),
+    orderCont.getAllOrders
+  );
 
 router
   .route('/showAllMyOrders')

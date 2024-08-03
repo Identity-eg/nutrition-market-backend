@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { authorizePermissions } from '../middlewares/full-auth.js';
 import { authenticateUser } from '../middlewares/full-auth.js';
 import * as controllers from '../controllers/dosageForm.js';
+import { USER_ROLES } from '../constants/index.js';
 
 const router = Router();
 router
   .route('/')
   .post(
     authenticateUser,
-    authorizePermissions('admin'),
+    authorizePermissions(USER_ROLES.superAdmin),
     controllers.createDosageForm
   )
   .get(controllers.getDosageForms);
@@ -18,12 +19,12 @@ router
   .get(controllers.getSingleDosageForm)
   .patch(
     authenticateUser,
-    authorizePermissions('admin'),
+    authorizePermissions(USER_ROLES.superAdmin),
     controllers.updateDosageForm
   )
   .delete(
     authenticateUser,
-    authorizePermissions('admin'),
+    authorizePermissions(USER_ROLES.superAdmin),
     controllers.deleteDosageForm
   );
 

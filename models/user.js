@@ -2,8 +2,10 @@ import mongoose from 'mongoose';
 import pkg from 'validator';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { USER_ROLES } from '../constants/index.js';
 
 const { model, Schema } = mongoose;
+const { ObjectId } = Schema.Types;
 const { isEmail } = pkg;
 
 const AddressSchema = new Schema({
@@ -16,26 +18,36 @@ const userSchema = new Schema(
   {
     name: {
       type: String,
-      required: [true, 'Please enter an username'],
+      required: [true, 'Please provide an username'],
       minlength: 3,
       maxlength: 50,
     },
     email: {
       type: String,
-      required: [true, 'Please enter an email'],
+      required: [true, 'Please provide an email'],
       unique: true,
       lowercase: true,
-      validate: [isEmail, 'Please enter a valid email'],
+      validate: [isEmail, 'Please provide a valid email'],
     },
     password: {
       type: String,
-      required: [true, 'Please enter an password'],
+      required: [true, 'Please provide a password'],
       minlength: [6, 'Password cannot be lower than 6 character'],
     },
     role: {
       type: String,
-      enum: ['admin', 'user'],
-      default: 'user',
+      enum: Object.values(USER_ROLES),
+      default: USER_ROLES.user,
+    },
+    company: {
+      type: ObjectId,
+      ref: 'Company',
+      required: [
+        function () {
+          return this.role === USER_ROLES.admin;
+        },
+        'Please provide admin company',
+      ],
     },
     blocked: {
       type: Boolean,

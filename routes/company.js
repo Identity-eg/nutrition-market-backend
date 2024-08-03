@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { authorizePermissions } from '../middlewares/full-auth.js';
 import { authenticateUser } from '../middlewares/full-auth.js';
 import * as controllers from '../controllers/company.js';
+import { USER_ROLES } from '../constants/index.js';
 
 const router = Router();
 router
   .route('/')
   .post(
     authenticateUser,
-    authorizePermissions('admin'),
+    authorizePermissions(USER_ROLES.superAdmin),
     controllers.createCompany
   )
   .get(controllers.getCompanys);
@@ -18,12 +19,12 @@ router
   .get(controllers.getSingleCompany)
   .patch(
     authenticateUser,
-    authorizePermissions('admin'),
+    authorizePermissions(USER_ROLES.superAdmin),
     controllers.updateCompany
   )
   .delete(
     authenticateUser,
-    authorizePermissions('admin'),
+    authorizePermissions(USER_ROLES.superAdmin),
     controllers.deleteCompany
   );
 

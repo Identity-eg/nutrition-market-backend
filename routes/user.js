@@ -14,8 +14,14 @@ import {
   updateUser,
   updateUserPassword,
 } from '../controllers/user.js';
+import { USER_ROLES } from '../constants/index.js';
 
-router.get('/', authenticateUser, authorizePermissions('admin'), getAllUsers);
+router.get(
+  '/',
+  authenticateUser,
+  authorizePermissions(USER_ROLES.superAdmin),
+  getAllUsers
+);
 
 router.get('/getMe', authenticateUser, showCurrentUser);
 router.patch('/updateUserPassword', authenticateUser, updateUserPassword);
@@ -25,7 +31,7 @@ router.post('/address', authenticateUser, addAddress);
 router.patch(
   '/block',
   authenticateUser,
-  authorizePermissions('admin'),
+  authorizePermissions(USER_ROLES.superAdmin),
   blockUser
 );
 

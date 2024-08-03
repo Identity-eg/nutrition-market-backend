@@ -1,17 +1,16 @@
 import { StatusCodes } from 'http-status-codes';
 
 const errorHandlerMiddleware = (err, req, res, next) => {
-  // console.log(err);
+  // console.log("error =>>",err);
   let customError = {
     statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
     msg: err.message || 'Something went wrong try again later',
   };
 
   if (err.name === 'ValidationError') {
-    // customError.msg = Object.values(err.errors)
-    //   .map((item) => item.message)
-    //   .join(',');
-    customError.msg = `${Object.keys(err.errors)[0]} is not a valid value`;
+    customError.msg = Object.values(err.errors)
+      .map((item) => item.message)
+      .join(', ');
     customError.statusCode = StatusCodes.BAD_REQUEST;
   }
   if (err.code && err.code === 11000) {
