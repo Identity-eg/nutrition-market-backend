@@ -2,14 +2,19 @@ import jwt from 'jsonwebtoken';
 import { StatusCodes } from 'http-status-codes';
 import crypto from 'crypto';
 import User from '../models/user.js';
+import Company from '../models/company.js';
 import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
-import { REFRESH_COOKIE_OPTIONS, USER_ROLES } from '../constants/index.js';
+import {
+  REFRESH_COOKIE_OPTIONS,
+  USER_ROLES,
+  usersAllowedToAccessDashboard,
+} from '../constants/index.js';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
-  const { email, name, password } = req.body;
+  const { email, name, password, company } = req.body;
 
   const emailUser = await User.findOne({ email });
 
@@ -20,7 +25,14 @@ export const register = async (req, res) => {
   const isFirstAccount = (await User.countDocuments({})) === 0;
   const role = isFirstAccount ? USER_ROLES.superAdmin : req.body.role;
 
-  const user = await User.create({ email, name, password, role });
+  const userToBeCreated = {
+    email,
+    name,
+    password,
+    role,
+    ...(company && { company }),
+  };
+  const user = await User.create(userToBeCreated);
 
   const tokenUser = createTokenUser(user);
   const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
@@ -37,12 +49,22 @@ export const register = async (req, res) => {
     REFRESH_COOKIE_OPTIONS
   );
 
-  res.status(StatusCodes.CREATED).json({ user: tokenUser, accessToken });
+  const userResponse = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    ordersCount: user.ordersCount,
+    addresses: user.addresses,
+  };
+  res.status(StatusCodes.CREATED).json({ user: userResponse, accessToken });
 };
 
 // LOGIN USER ########################
 export const login = async (req, res) => {
   const { email, password } = req.body;
+  const comingFromDashboard =
+    req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
 
   if (!email || !password) {
     throw new CustomError.BadRequestError('Please provide email and password');
@@ -58,6 +80,19 @@ export const login = async (req, res) => {
 
   if (!isPasswordMatches) {
     throw new CustomError.UnauthenticatedError('Invalid Credentials');
+  }
+
+  let userCompany = undefined;
+  if (comingFromDashboard) {
+    if (!usersAllowedToAccessDashboard.includes(user.role)) {
+      throw new CustomError.UnauthenticatedError(
+        'Forbidden to access dashboard'
+      );
+    }
+    if (user.role === USER_ROLES.admin) {
+      const company = await Company.findById(user.company);
+      userCompany = company;
+    }
   }
 
   if (user.blocked) {
@@ -79,9 +114,20 @@ export const login = async (req, res) => {
     REFRESH_COOKIE_OPTIONS
   );
 
+  const userResponse = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    ordersCount: user.ordersCount,
+    addresses: user.addresses,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    ...(userCompany && { company: userCompany }),
+  };
   res
     .status(StatusCodes.OK)
-    .json({ user: tokenUser, accessToken, refreshToken });
+    .json({ user: userResponse, accessToken, refreshToken });
 };
 
 // REFRESH TOKEN #####################

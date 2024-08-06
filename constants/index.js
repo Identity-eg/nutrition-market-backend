@@ -17,3 +17,8 @@ export const USER_ROLES = {
   admin: 'ADMIN',
   superAdmin: 'SUPER_ADMIN',
 };
+
+export const usersAllowedToAccessDashboard = [
+  USER_ROLES.superAdmin,
+  USER_ROLES.admin,
+];
