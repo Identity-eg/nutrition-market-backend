@@ -155,7 +155,25 @@ export const refresh = async (req, res) => {
       expiresIn: '30m',
     });
 
-    return res.json({ accessToken });
+    let userCompany = undefined;
+    if (user.role === USER_ROLES.admin) {
+      const company = await Company.findById(user.company);
+      userCompany = company;
+    }
+
+    const userResponse = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      ordersCount: user.ordersCount,
+      addresses: user.addresses,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      ...(userCompany && { company: userCompany }),
+    };
+
+    return res.json({ accessToken, user: userResponse });
   } catch (error) {
     throw new CustomError.UnauthorizedError(`Forbidden ${error.message}`);
   }
