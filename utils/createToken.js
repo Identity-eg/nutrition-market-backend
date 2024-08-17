@@ -4,6 +4,7 @@ const createTokenUser = (user) => {
     email: user.email,
     role: user.role,
     _id: user._id,
+    ...(user.company && { company: user.company }),
   };
 };
 
