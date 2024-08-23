@@ -2,102 +2,39 @@ import { StatusCodes } from 'http-status-codes';
 import Cart from '../models/cart.js';
 import Product from '../models/product.js';
 import CustomError from '../errors/index.js';
+import { jwtDecode } from 'jwt-decode';
 
 // ################# Get Cart #################
 export const getCart = async (req, res) => {
-  const { _id: userId } = req.user;
-  const cart = await Cart.findOne({ user: userId }).populate({
-    path: 'items.product items.selectedColor',
+  const cookies = req.cookies;
+  const cartId = cookies['cart_id'] || req.body.cartId;
+
+  const refreshToken =
+    cookies[process.env.REFRESH_TOKEN_NAME] || req.body.refreshToken;
+  const user = refreshToken ? jwtDecode(refreshToken) : undefined;
+
+  const cart = await Cart.findOne({
+    $or: [
+      { $and: [{ user: { $exists: true } }, { user: user?._id }] },
+      { $and: [{ user: { $exists: false } }, { _id: cartId }] },
+    ],
+  }).populate({
+    path: 'items.product',
     select: 'name price images',
   });
 
   if (!cart) {
-    throw new CustomError.NotFoundError(`No cart for this userid : ${userId}`);
+    throw new CustomError.NotFoundError(`No Cart Found`);
   }
   return res.status(StatusCodes.OK).json({ cart });
 };
 
-// ################# Add To Cart #################
-// export const addItemToCart = async (req, res) => {
-//   const { _id: userId } = req.user;
-//   const { amount, color, productId, size } = req.body;
-//   // console.log(req.body);
-//   // 1) Check if product doesn't exist
-//   const product = await Product.findById(productId);
-//   if (!product) {
-//     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
-//   }
-
-//   // // use priceAfterDiscount instead of price after add discount feature
-//   const { price } = product;
-
-//   // 2) Check if cart exists
-//   const cart = await Cart.findOne({ user: userId });
-//   if (cart) {
-//     // Find item index in the cart
-//     const itemIndex = cart.items.findIndex(
-//       (item) =>
-//         item.product.toString() === productId.toString() &&
-//         item.selectedColor.toString() === color.toString() &&
-//         item.selectedSize.toString() === size.toString()
-//     );
-
-//     if (itemIndex === -1) {
-//       // in case item doesn't exist
-//       cart.items.push({
-//         product: productId,
-//         selectedColor: color,
-//         selectedSize: size,
-//         amount,
-//         totalProductPrice: price * amount,
-//       });
-//       cart.totalItems += amount;
-//       cart.totalPrice += price * amount;
-//     } else {
-//       // in case item exists
-//       cart.items = cart.items.map((item, idx) =>
-//         idx === itemIndex
-//           ? {
-//               ...item,
-//               amount: item.amount + amount,
-//               totalProductPrice: item.totalProductPrice + price * amount,
-//             }
-//           : item
-//       );
-//       cart.totalItems += amount;
-//       cart.totalPrice += price * amount;
-//     }
-//     await cart.save();
-//     return res.status(StatusCodes.CREATED).json({ cart });
-//   }
-
-//   // 3) In case user doesn't have cart, then create new cart for the user
-//   const cartData = {
-//     user: userId,
-//     items: [
-//       {
-//         product: productId,
-//         selectedColor: color,
-//         selectedSize: size,
-//         amount,
-//         totalProductPrice: price * amount,
-//       },
-//     ],
-//     totalItems: amount,
-//     totalPrice: price * amount,
-//   };
-//   // 4) Create new cart
-//   const newCart = await Cart.create(cartData);
-//   // 5) If everything is OK, send cart
-//   return res.status(StatusCodes.CREATED).json({ cart: newCart });
-// };
-
 // #################### Add To Cart ####################
 export const addItemToCart = async (req, res) => {
-  const { _id: userId } = req.user;
-const { amount, variantId, productId } = req.body;
+  // const { _id: userId } = req.user;
+  const { amount, variantId, productId } = req.body;
 
-// 1) Check if product doesn't exist
+  // 1) Check if product doesn't exist
   const product = await Product.findById(productId);
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
@@ -106,15 +43,31 @@ const { amount, variantId, productId } = req.body;
   // // use priceAfterDiscount instead of price after add discount feature
   const { price, priceAfterDiscount } = product;
 
+  // #################################################################
+  const cookies = req.cookies;
+  const cartId = cookies['cart_id'];
+
+  const refreshToken = cookies[process.env.REFRESH_TOKEN_NAME];
+  const user = refreshToken ? jwtDecode(refreshToken) : undefined;
+  // #################################################################
+
   // 2) Check if cart exists
-  const cart = await Cart.findOne({ user: userId });
+  const cart = await Cart.findOne({
+    $or: [
+      { $and: [{ user: { $exists: true } }, { user: user?._id }] },
+      { $and: [{ user: { $exists: false } }, { _id: cartId }] },
+    ],
+  });
+
   if (cart) {
     // Find item index in the cart
     const itemIndex = cart.items.findIndex(
       (item) =>
         item.product.toString() === productId.toString() &&
-        item.selectedVariant.toString() === variantId.toString()
+        item?.selectedVariant?.toString() === variantId?.toString()
     );
+
+    console.log({ itemIndex });
 
     if (itemIndex === -1) {
       // in case item doesn't exist
@@ -133,7 +86,8 @@ const { amount, variantId, productId } = req.body;
           ? {
               ...item,
               amount: item.amount + amount,
-              totalProductPrice: item.totalProductPrice + (priceAfterDiscount || price) * amount,
+              totalProductPrice:
+                item.totalProductPrice + (priceAfterDiscount || price) * amount,
             }
           : item
       );
@@ -141,12 +95,12 @@ const { amount, variantId, productId } = req.body;
       cart.totalPrice += (priceAfterDiscount || price) * amount;
     }
     await cart.save();
-    return res.status(StatusCodes.CREATED).json({ cart });
+    return res.status(StatusCodes.CREATED).json({ msg: 'Added successfully' });
   }
 
   // 3) In case user doesn't have cart, then create new cart for the user
   const cartData = {
-    user: userId,
+    user: user?._id,
     items: [
       {
         product: productId,
@@ -160,15 +114,60 @@ const { amount, variantId, productId } = req.body;
   };
   // 4) Create new cart
   const newCart = await Cart.create(cartData);
+  console.log({ body: req.body });
+
+  if (!user) {
+    return res
+      .status(StatusCodes.CREATED)
+      .json({ msg: 'Added successfully', cartId: newCart._id });
+  }
+
   // 5) If everything is OK, send cart
-  return res.status(StatusCodes.CREATED).json({ cart: newCart });
-}
+  return res.status(StatusCodes.CREATED).json({ msg: 'Added successfully' });
+};
 
 // #################### Add To Cart ####################
 export const syncCart = async (req, res) => {
   const { _id: userId } = req.user;
-  const { cart } = req.body;
-}
+
+  const cookies = req.cookies;
+  const cartId = cookies['cart_id'];
+  const geustCart = await Cart.findById(cartId);
+  const userCart = await Cart.findOne({ user: userId });
+  console.log('inside sync cart');
+
+  if (geustCart && userCart) {
+    const arr = [...userCart.items, ...geustCart.items];
+
+    const newOne = Object.values(
+      arr.reduce((acc, item) => {
+        if (!acc[item.product])
+          acc[item.product] = {
+            product: item.product,
+            selectedVariant: item.selectedVariant,
+            _id: item._id,
+            amount: 0,
+            totalProductPrice: 0,
+          };
+
+        acc[item.product].amount += item.amount;
+        acc[item.product].totalProductPrice += item.totalProductPrice;
+        return acc;
+      }, {})
+    );
+
+    userCart.items = newOne;
+    userCart.totalItems += geustCart.totalItems;
+    userCart.totalPrice += geustCart.totalPrice;
+
+    await userCart.save();
+    await geustCart.deleteOne();
+  } else if (geustCart) {
+    geustCart.user = userId;
+    await geustCart.save();
+  }
+  return res.status(StatusCodes.CREATED).json({ msg: 'Sync successfully' });
+};
 
 // ################# Increase By Amount #################
 export const increaseByone = async (req, res) => {
@@ -255,13 +254,26 @@ export const reduceByone = async (req, res) => {
 
 // ################# Delete Item From Cart #################
 export const deleteItemFromCart = async (req, res) => {
-  const { _id: userId } = req.user;
+  let isCartEmpty = false;
+
+  const cookies = req.cookies;
+  const cartId = cookies['cart_id'];
+
+  const refreshToken = cookies[process.env.REFRESH_TOKEN_NAME];
+  const user = refreshToken ? jwtDecode(refreshToken) : undefined;
+
   const { itemId } = req.params;
 
   // 1) Check if cart exists
-  let cart = await Cart.findOne({ user: userId });
+  const cart = await Cart.findOne({
+    $or: [
+      { $and: [{ user: { $exists: true } }, { user: user?._id }] },
+      { $and: [{ user: { $exists: false } }, { _id: cartId }] },
+    ],
+  });
+
   if (!cart) {
-    throw new CustomError.NotFoundError(`No cart for user: ${userId}`);
+    throw new CustomError.NotFoundError(`No cart Found`);
   }
 
   // 1) Check if item doesn't exist
@@ -279,9 +291,14 @@ export const deleteItemFromCart = async (req, res) => {
   cart.totalPrice -= deletedItem.totalProductPrice;
   await cart.save();
 
+  if (cart.totalItems === 0) {
+    await cart.deleteOne();
+    isCartEmpty = true;
+  }
+
   return res
     .status(StatusCodes.CREATED)
-    .json({ message: 'item deleted successfully from cart' });
+    .json({ message: 'item deleted successfully from cart', isCartEmpty });
 };
 
 // ################# Delete Cart #################
