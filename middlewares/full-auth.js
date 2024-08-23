@@ -13,12 +13,12 @@ export const authenticateUser = async (req, res, next) => {
   }
 
   try {
-    const { name, _id, role } = jwt.verify(
+    const { name, _id, role, company } = jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET
     );
     // console.log({ name, _id, role });
-    req.user = { name, _id, role };
+    req.user = { name, _id, role, company };
     next();
   } catch (error) {
     throw new CustomError.UnauthorizedError(`Forbidden ${error.message}`);

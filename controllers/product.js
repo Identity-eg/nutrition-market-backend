@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs';
 import cloudinary from 'cloudinary';
 import { StatusCodes } from 'http-status-codes';
 import slugify from 'slugify';
@@ -7,6 +6,7 @@ import slugify from 'slugify';
 import Product from '../models/product.js';
 import Review from '../models/review.js';
 import CustomError from '../errors/index.js';
+import { USER_ROLES } from '../constants/index.js';
 
 export const createProduct = async (req, res) => {
   // req.body.user = req.user._id;
@@ -146,16 +146,31 @@ export const updateProduct = async (req, res) => {
     req.body.variants = variantsWithSlug;
   }
 
-  const product = await Product.findOneAndUpdate({ _id: productId }, req.body, {
-    new: true,
-    runValidators: true,
-  });
-
+  const product = await Product.findById(productId);
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
   }
 
-  res.status(StatusCodes.OK).json({ product });
+  const myOwnProduct =
+    req.user.role === USER_ROLES.admin
+      ? req.user.company.toString() === product.company.toString()
+      : true;
+  if (!myOwnProduct) {
+    throw new CustomError.UnauthenticatedError(
+      "You don't have access to do this action"
+    );
+  }
+
+  const updatedProduct = await Product.findOneAndUpdate(
+    { _id: productId },
+    req.body,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  res.status(StatusCodes.OK).json({ product: updatedProduct });
 };
 
 // ######################################################
@@ -163,10 +178,19 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   const { id: productId } = req.params;
 
-  const product = await Product.findOne({ _id: productId });
+  const product = await Product.findById(productId);
 
   if (!product) {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+  const myOwnProduct =
+    req.user.role === USER_ROLES.admin
+      ? req.user.company.toString() === product.company.toString()
+      : true;
+  if (!myOwnProduct) {
+    throw new CustomError.UnauthenticatedError(
+      `You don't have access to do this action : ${productId}`
+    );
   }
 
   await product.deleteOne();
