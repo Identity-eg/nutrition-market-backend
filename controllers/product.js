@@ -10,8 +10,16 @@ import CustomError from '../errors/index.js';
 
 export const createProduct = async (req, res) => {
   // req.body.user = req.user._id;
-  req.body.slug = slugify(req.body.name, { lower: true });
-  console.log(req.body);
+  // req.body.slug = slugify(req.body.variants[0].name, { lower: true });
+  const variantsWithSlug = req.body.variants?.map((v) => {
+    return {
+      ...v,
+      slug: slugify(v.name ?? '', { lower: true }),
+    };
+  });
+
+  req.body.variants = variantsWithSlug;
+
   const product = await Product.create(req.body);
   res.status(StatusCodes.CREATED).json({ product });
 };
@@ -32,15 +40,15 @@ export const getAllProducts = async (req, res) => {
 
   let skip = (Number(page) - 1) * Number(limit);
   let queryObject = {};
-  // Name
+
   if (name) {
     queryObject.name = { $regex: name, $options: 'i' };
   }
-  // Average Rating
+
   if (averageRating) {
     queryObject.averageRating = { $gte: averageRating };
   }
-  // Price
+
   if (price) {
     const from = price.split('-')[0];
     const to = price.split('-')[1];
@@ -50,15 +58,15 @@ export const getAllProducts = async (req, res) => {
       ...(to && { $lte: to }),
     };
   }
-  // Company
+
   if (company) {
     queryObject.company = { $in: company };
   }
-  // Item Form
+
   if (dosageForm) {
     queryObject.dosageForm = { $in: dosageForm };
   }
-  // Category
+
   if (category) {
     queryObject.category = { $elemMatch: { $in: category } };
   }
@@ -66,7 +74,6 @@ export const getAllProducts = async (req, res) => {
   // if (queryObject.sizes) {
   //   queryObject.sizes = { $elemMatch: { $in: sizes } };
   // }
-
   const products = await Product.find(queryObject)
     .sort(sort)
     .skip(skip)
@@ -130,8 +137,13 @@ export const getSingleProductReviews = async (req, res) => {
 export const updateProduct = async (req, res) => {
   const { id: productId } = req.params;
 
-  if (req.body.name) {
-    req.body.slug = slugify(req.body.name);
+  if (req.body.variants) {
+    const variantsWithSlug = req.body.variants?.map((v) => ({
+      ...v,
+      slug: slugify(v.name ?? '', { lower: true }),
+    }));
+
+    req.body.variants = variantsWithSlug;
   }
 
   const product = await Product.findOneAndUpdate({ _id: productId }, req.body, {

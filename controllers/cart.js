@@ -20,13 +20,30 @@ export const getCart = async (req, res) => {
     ],
   }).populate({
     path: 'items.product',
-    select: 'name price images',
+    select: 'variants',
   });
+
+  console.log({ cartItems: cart.items });
 
   if (!cart) {
     throw new CustomError.NotFoundError(`No Cart Found`);
   }
-  return res.status(StatusCodes.OK).json({ cart });
+
+  const normalizedCart = cart.toObject();
+
+  const newCart = {
+    ...normalizedCart,
+    items: normalizedCart.items.map((item) => {
+      const { selectedVariant, product } = item;
+      return {
+        ...item,
+        selectedVariant: product.variants.find((v) => {
+          return v._id.toString() === selectedVariant;
+        }),
+      };
+    }),
+  };
+  return res.status(StatusCodes.OK).json({ cart: newCart });
 };
 
 // #################### Add To Cart ####################
@@ -41,7 +58,6 @@ export const addItemToCart = async (req, res) => {
   }
 
   // // use priceAfterDiscount instead of price after add discount feature
-  const { price, priceAfterDiscount } = product;
 
   // #################################################################
   const cookies = req.cookies;
@@ -50,7 +66,6 @@ export const addItemToCart = async (req, res) => {
   const refreshToken = cookies[process.env.REFRESH_TOKEN_NAME];
   const user = refreshToken ? jwtDecode(refreshToken) : undefined;
   // #################################################################
-
   // 2) Check if cart exists
   const cart = await Cart.findOne({
     $or: [
@@ -58,6 +73,7 @@ export const addItemToCart = async (req, res) => {
       { $and: [{ user: { $exists: false } }, { _id: cartId }] },
     ],
   });
+  const variant = product.variants.find((v) => v._id.toString() === variantId);
 
   if (cart) {
     // Find item index in the cart
@@ -66,19 +82,18 @@ export const addItemToCart = async (req, res) => {
         item.product.toString() === productId.toString() &&
         item?.selectedVariant?.toString() === variantId?.toString()
     );
-
-    console.log({ itemIndex });
-
+    console.log({ itemIndex, cart, variantId, product });
     if (itemIndex === -1) {
       // in case item doesn't exist
       cart.items.push({
         product: productId,
         selectedVariant: variantId,
         amount,
-        totalProductPrice: (priceAfterDiscount || price) * amount,
+        totalProductPrice:
+          (variant.priceAfterDiscount || variant.price) * amount,
       });
       cart.totalItems += amount;
-      cart.totalPrice += (priceAfterDiscount || price) * amount;
+      cart.totalPrice += (variant.priceAfterDiscount || variant.price) * amount;
     } else {
       // in case item exists
       cart.items = cart.items.map((item, idx) =>
@@ -87,12 +102,13 @@ export const addItemToCart = async (req, res) => {
               ...item,
               amount: item.amount + amount,
               totalProductPrice:
-                item.totalProductPrice + (priceAfterDiscount || price) * amount,
+                item.totalProductPrice +
+                (variant.priceAfterDiscount || variant.price) * amount,
             }
           : item
       );
       cart.totalItems += amount;
-      cart.totalPrice += (priceAfterDiscount || price) * amount;
+      cart.totalPrice += (variant.priceAfterDiscount || variant.price) * amount;
     }
     await cart.save();
     return res.status(StatusCodes.CREATED).json({ msg: 'Added successfully' });
@@ -106,15 +122,15 @@ export const addItemToCart = async (req, res) => {
         product: productId,
         selectedVariant: variantId,
         amount,
-        totalProductPrice: (priceAfterDiscount || price) * amount,
+        totalProductPrice:
+          (variant.priceAfterDiscount || variant.price) * amount,
       },
     ],
     totalItems: amount,
-    totalPrice: (priceAfterDiscount || price) * amount,
+    totalPrice: (variant.priceAfterDiscount || variant.price) * amount,
   };
   // 4) Create new cart
   const newCart = await Cart.create(cartData);
-  console.log({ body: req.body });
 
   if (!user) {
     return res

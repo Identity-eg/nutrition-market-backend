@@ -12,14 +12,35 @@ const variantSchema = new Schema(
   {
     name: {
       type: String,
+      required: [true, 'Please provide product name'],
+      maxlength: [100, 'Name can not be more than 100 characters'],
     },
-    unitCount: { type: Number },
+    slug: {
+      type: String,
+      unique: true,
+      required: [true, 'Please provide product slug'],
+    },
+    unitCount: {
+      type: Number,
+      required: [true, 'Please provide product unit count'],
+    },
     flavor: {
       type: String,
     },
+    quantity: {
+      type: Number,
+      required: [true, 'Please provide product quantity'],
+    },
+    sold: {
+      type: Number,
+      default: 0,
+    },
     price: {
       type: Number,
-      required: [true, 'Please provide product size'],
+      required: [true, 'Please provide product price'],
+    },
+    priceAfterDiscount: {
+      type: Number,
     },
     images: {
       type: [
@@ -39,16 +60,6 @@ const variantSchema = new Schema(
 
 const productSchema = new Schema(
   {
-    name: {
-      type: String,
-      required: [true, 'Please provide product name'],
-      maxlength: [100, 'Name can not be more than 100 characters'],
-    },
-    slug: {
-      type: String,
-      unique: true,
-      required: [true, 'Please provide product slug'],
-    },
     description: {
       type: String,
       required: [true, 'Please provide product description'],
@@ -67,16 +78,6 @@ const productSchema = new Schema(
         otherIngredients: [{ name: String }],
       },
       required: [true, "Please provide product's nutrition Facts"],
-    },
-    images: {
-      type: [
-        {
-          url: String,
-          name: String,
-          size: Number,
-        },
-      ],
-      required: [true, 'Please provide product image'],
     },
     category: {
       type: [
@@ -97,14 +98,13 @@ const productSchema = new Schema(
       ref: 'DosageForm',
       required: [true, 'Please provide product Form'],
     },
-    unitCount: {
-      type: Number,
-      required: [true, 'Please provide product unit count'],
+    variants: {
+      type: [variantSchema],
+      validate: {
+        validator: (v) => Array.isArray(v) && v.length > 0,
+        message: 'Please provide at least 1 variant',
+      },
     },
-    flavor: {
-      type: String,
-    },
-    variants: [variantSchema],
     directionOfUse: {
       type: String,
     },
@@ -117,17 +117,6 @@ const productSchema = new Schema(
     NFSA_REG_NO: {
       type: String,
     },
-    quantity: {
-      type: Number,
-      required: [true, 'Please provide product quantity'],
-    },
-    price: {
-      type: Number,
-      required: [true, 'Please provide product price'],
-    },
-    priceAfterDiscount: {
-      type: Number,
-    },
     numReviews: {
       type: Number,
       default: 0,
@@ -139,10 +128,6 @@ const productSchema = new Schema(
     featured: {
       type: Boolean,
       default: false,
-    },
-    sold: {
-      type: Number,
-      default: 0,
     },
   },
   {
