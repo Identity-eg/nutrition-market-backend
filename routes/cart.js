@@ -6,19 +6,15 @@ const router = Router();
 
 router
   .route('/')
-  .get(authenticateUser, controllers.getCart)
-  .post(authenticateUser, controllers.addItemToCart)
-  .delete(authenticateUser, controllers.deleteCart);
+  .get(controllers.getCart)
+  .post(controllers.addItemToCart)
+  .delete(controllers.deleteCart);
 
-router.post('/sync', authenticateUser, controllers.syncCart)
+router.get('/sync', authenticateUser, controllers.syncCart);
 
-router.post('/:itemId/reduce-one', authenticateUser, controllers.reduceByone);
-router.post(
-  '/:itemId/increase-one',
-  authenticateUser,
-  controllers.increaseByone
-);
+router.post('/:itemId/reduce-one', controllers.reduceByone);
+router.post('/:itemId/increase-one', controllers.increaseByone);
 
-router.delete('/:itemId', authenticateUser, controllers.deleteItemFromCart);
+router.delete('/:itemId', controllers.deleteItemFromCart);
 
 export default router;

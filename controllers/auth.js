@@ -64,6 +64,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   const { email, password } = req.body;
   const comingFromDashboard =
+    req.headers['api-key'] &&
     req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
 
   if (!email || !password) {
