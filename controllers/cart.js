@@ -2,16 +2,11 @@ import { StatusCodes } from 'http-status-codes';
 import Cart from '../models/cart.js';
 import Product from '../models/product.js';
 import CustomError from '../errors/index.js';
-import { jwtDecode } from 'jwt-decode';
+import { getCredFromCookies } from '../utils/getCredFromCookies.js';
 
 // ################# Get Cart #################
 export const getCart = async (req, res) => {
-  const cookies = req.cookies;
-  const cartId = cookies['cart_id'] || req.body.cartId;
-
-  const refreshToken =
-    cookies[process.env.REFRESH_TOKEN_NAME] || req.body.refreshToken;
-  const user = refreshToken ? jwtDecode(refreshToken) : undefined;
+  const { user, cartId } = getCredFromCookies(req);
 
   const cart = await Cart.findOne({
     $or: [
@@ -60,11 +55,7 @@ export const addItemToCart = async (req, res) => {
   // // use priceAfterDiscount instead of price after add discount feature
 
   // #################################################################
-  const cookies = req.cookies;
-  const cartId = cookies['cart_id'];
-
-  const refreshToken = cookies[process.env.REFRESH_TOKEN_NAME];
-  const user = refreshToken ? jwtDecode(refreshToken) : undefined;
+  const { user, cartId } = getCredFromCookies(req);
   // #################################################################
   // 2) Check if cart exists
   const cart = await Cart.findOne({
@@ -82,7 +73,7 @@ export const addItemToCart = async (req, res) => {
         item.product.toString() === productId.toString() &&
         item?.selectedVariant?.toString() === variantId?.toString()
     );
-    console.log({ itemIndex, cart, variantId, product });
+
     if (itemIndex === -1) {
       // in case item doesn't exist
       cart.items.push({
@@ -146,11 +137,9 @@ export const addItemToCart = async (req, res) => {
 export const syncCart = async (req, res) => {
   const { _id: userId } = req.user;
 
-  const cookies = req.cookies;
-  const cartId = cookies['cart_id'];
+  const { cartId } = getCredFromCookies(req);
   const geustCart = await Cart.findById(cartId);
   const userCart = await Cart.findOne({ user: userId });
-  console.log('inside sync cart');
 
   if (geustCart && userCart) {
     const arr = [...userCart.items, ...geustCart.items];
@@ -272,11 +261,7 @@ export const reduceByone = async (req, res) => {
 export const deleteItemFromCart = async (req, res) => {
   let isCartEmpty = false;
 
-  const cookies = req.cookies;
-  const cartId = cookies['cart_id'];
-
-  const refreshToken = cookies[process.env.REFRESH_TOKEN_NAME];
-  const user = refreshToken ? jwtDecode(refreshToken) : undefined;
+  const { user, cartId } = getCredFromCookies(req);
 
   const { itemId } = req.params;
 
