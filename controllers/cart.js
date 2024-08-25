@@ -108,8 +108,7 @@ export const addItemToCart = async (req, res) => {
     return res.status(StatusCodes.CREATED).json({ msg: 'Added successfully' });
   }
 
-  const isExceedQuantity =
-    variant?.quantity < amount;
+  const isExceedQuantity = variant?.quantity < amount;
 
   if (isExceedQuantity)
     throw new CustomError.BadRequestError(
@@ -215,6 +214,7 @@ export const increaseByone = async (req, res) => {
   const variant = cart.items[itemIndex].product.variants.find(
     (v) => v._id.toString() === cart.items[itemIndex].selectedVariant
   );
+  const calculatedPrice = variant.priceAfterDiscount || variant.price;
 
   const isExceedQuantity = variant.quantity === cart.items[itemIndex].amount;
 
@@ -228,12 +228,12 @@ export const increaseByone = async (req, res) => {
       ? {
           ...item,
           amount: item.amount + 1,
-          totalProductPrice: item.totalProductPrice + variant.price,
+          totalProductPrice: item.totalProductPrice + calculatedPrice,
         }
       : item
   );
   cart.totalItems += 1;
-  cart.totalPrice += variant.price;
+  cart.totalPrice += calculatedPrice;
 
   await cart.save();
   return res.status(StatusCodes.CREATED).json({ cart });
@@ -266,6 +266,7 @@ export const reduceByone = async (req, res) => {
   const variant = cart.items[itemIndex].product.variants.find(
     (v) => v._id.toString() === cart.items[itemIndex].selectedVariant
   );
+  const calculatedPrice = variant.priceAfterDiscount || variant.price;
 
   if (cart.items[itemIndex].amount === 1) {
     cart.totalPrice -= cart.items[itemIndex].product.price;
@@ -278,11 +279,11 @@ export const reduceByone = async (req, res) => {
         ? {
             ...item,
             amount: item.amount - 1,
-            totalProductPrice: item.totalProductPrice - variant.price,
+            totalProductPrice: item.totalProductPrice - calculatedPrice,
           }
         : item
     );
-    cart.totalPrice -= variant.price;
+    cart.totalPrice -= calculatedPrice;
   }
 
   cart.totalItems -= 1;
