@@ -18,17 +18,17 @@ export const getCart = async (req, res) => {
     select: 'variants',
   });
 
-  console.log({ cartItems: cart.items });
-
   if (!cart) {
-    throw new CustomError.NotFoundError(`No Cart Found`);
+    return res.status(StatusCodes.OK).json({
+      cart: { user: undefined, items: [], totalItems: 0, totalPrice: 0 },
+    });
   }
 
   const normalizedCart = cart.toObject();
 
   const newCart = {
     ...normalizedCart,
-    items: normalizedCart.items.map((item) => {
+    items: normalizedCart?.items?.map((item) => {
       const { selectedVariant, product } = item;
       return {
         ...item,
@@ -73,6 +73,12 @@ export const addItemToCart = async (req, res) => {
         item.product.toString() === productId.toString() &&
         item?.selectedVariant?.toString() === variantId?.toString()
     );
+    const isExceedQuantity = variant?.quantity === cart.items[itemIndex]?.amount;
+
+    if (isExceedQuantity)
+      throw new CustomError.BadRequestError(
+        'The requested quantity is not available'
+      );
 
     if (itemIndex === -1) {
       // in case item doesn't exist
@@ -176,16 +182,23 @@ export const syncCart = async (req, res) => {
 
 // ################# Increase By Amount #################
 export const increaseByone = async (req, res) => {
-  const { _id: userId } = req.user;
   const { itemId } = req.params;
 
+  const { cartId, user } = getCredFromCookies(req);
+
   // 2) Check if cart exists
-  let cart = await Cart.findOne({ user: userId }).populate({
+  let cart = await Cart.findOne({
+    $or: [
+      { $and: [{ user: { $exists: true } }, { user: user?._id }] },
+      { $and: [{ user: { $exists: false } }, { _id: cartId }] },
+    ],
+  }).populate({
     path: 'items.product',
-    select: 'price',
+    select: 'variants',
   });
+
   if (!cart) {
-    throw new CustomError.NotFoundError(`No cart for user: ${userId}`);
+    throw new CustomError.NotFoundError(`No cart found`);
   }
 
   // Find item index in the cart
@@ -196,17 +209,28 @@ export const increaseByone = async (req, res) => {
   if (itemIndex === -1)
     throw new CustomError.NotFoundError(`No item with id: ${itemId}`);
 
+  const variant = cart.items[itemIndex].product.variants.find(
+    (v) => v._id.toString() === cart.items[itemIndex].selectedVariant
+  );
+
+  const isExceedQuantity = variant.quantity === cart.items[itemIndex].amount;
+
+  if (isExceedQuantity)
+    throw new CustomError.BadRequestError(
+      'The requested quantity is not available'
+    );
+
   cart.items = cart.items.map((item) =>
     item._id.toString() === itemId.toString()
       ? {
           ...item,
           amount: item.amount + 1,
-          totalProductPrice: item.totalProductPrice + item.product.price,
+          totalProductPrice: item.totalProductPrice + variant.price,
         }
       : item
   );
   cart.totalItems += 1;
-  cart.totalPrice += cart.items[itemIndex].product.price;
+  cart.totalPrice += variant.price;
 
   await cart.save();
   return res.status(StatusCodes.CREATED).json({ cart });
@@ -214,17 +238,20 @@ export const increaseByone = async (req, res) => {
 
 // ################# Reduce By Amount #################
 export const reduceByone = async (req, res) => {
-  const { _id: userId } = req.user;
   const { itemId } = req.params;
 
+  const { cartId, user } = getCredFromCookies(req);
+
   // 2) Check if cart exists
-  let cart = await Cart.findOne({ user: userId }).populate({
+  let cart = await Cart.findOne({
+    $or: [
+      { $and: [{ user: { $exists: true } }, { user: user?._id }] },
+      { $and: [{ user: { $exists: false } }, { _id: cartId }] },
+    ],
+  }).populate({
     path: 'items.product',
-    select: 'price',
+    select: 'variants',
   });
-  if (!cart) {
-    throw new CustomError.NotFoundError(`No cart for user: ${userId}`);
-  }
 
   // Find item index in the cart
   const itemIndex = cart.items.findIndex(
@@ -232,6 +259,10 @@ export const reduceByone = async (req, res) => {
   );
   if (itemIndex === -1)
     throw new CustomError.NotFoundError(`No item with id: ${itemId}`);
+
+  const variant = cart.items[itemIndex].product.variants.find(
+    (v) => v._id.toString() === cart.items[itemIndex].selectedVariant
+  );
 
   if (cart.items[itemIndex].amount === 1) {
     cart.totalPrice -= cart.items[itemIndex].product.price;
@@ -244,11 +275,11 @@ export const reduceByone = async (req, res) => {
         ? {
             ...item,
             amount: item.amount - 1,
-            totalProductPrice: item.totalProductPrice - item.product.price,
+            totalProductPrice: item.totalProductPrice - variant.price,
           }
         : item
     );
-    cart.totalPrice -= cart.items[itemIndex].product.price;
+    cart.totalPrice -= variant.price;
   }
 
   cart.totalItems -= 1;
