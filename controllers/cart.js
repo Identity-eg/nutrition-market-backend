@@ -2,7 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 import Cart from '../models/cart.js';
 import Product from '../models/product.js';
 import CustomError from '../errors/index.js';
-import { getCredFromCookies } from '../utils/getCredFromCookies.js';
+import { getCredFromCookies } from '../utils/index.js';
 
 // ################# Get Cart #################
 export const getCart = async (req, res) => {
@@ -52,11 +52,8 @@ export const addItemToCart = async (req, res) => {
     throw new CustomError.NotFoundError(`No product with id : ${productId}`);
   }
 
-  // // use priceAfterDiscount instead of price after add discount feature
-
-  // #################################################################
   const { user, cartId } = getCredFromCookies(req);
-  // #################################################################
+
   // 2) Check if cart exists
   const cart = await Cart.findOne({
     $or: [
@@ -65,6 +62,8 @@ export const addItemToCart = async (req, res) => {
     ],
   });
   const variant = product.variants.find((v) => v._id.toString() === variantId);
+  const calculatedPrice =
+    (variant.priceAfterDiscount || variant.price) * amount;
 
   if (cart) {
     // Find item index in the cart
@@ -73,7 +72,8 @@ export const addItemToCart = async (req, res) => {
         item.product.toString() === productId.toString() &&
         item?.selectedVariant?.toString() === variantId?.toString()
     );
-    const isExceedQuantity = variant?.quantity === cart.items[itemIndex]?.amount;
+    const isExceedQuantity =
+      variant?.quantity < (cart.items[itemIndex]?.amount ?? 0) + amount;
 
     if (isExceedQuantity)
       throw new CustomError.BadRequestError(
@@ -86,11 +86,10 @@ export const addItemToCart = async (req, res) => {
         product: productId,
         selectedVariant: variantId,
         amount,
-        totalProductPrice:
-          (variant.priceAfterDiscount || variant.price) * amount,
+        totalProductPrice: calculatedPrice,
       });
       cart.totalItems += amount;
-      cart.totalPrice += (variant.priceAfterDiscount || variant.price) * amount;
+      cart.totalPrice += calculatedPrice;
     } else {
       // in case item exists
       cart.items = cart.items.map((item, idx) =>
@@ -98,20 +97,25 @@ export const addItemToCart = async (req, res) => {
           ? {
               ...item,
               amount: item.amount + amount,
-              totalProductPrice:
-                item.totalProductPrice +
-                (variant.priceAfterDiscount || variant.price) * amount,
+              totalProductPrice: item.totalProductPrice + calculatedPrice,
             }
           : item
       );
       cart.totalItems += amount;
-      cart.totalPrice += (variant.priceAfterDiscount || variant.price) * amount;
+      cart.totalPrice += calculatedPrice;
     }
     await cart.save();
     return res.status(StatusCodes.CREATED).json({ msg: 'Added successfully' });
   }
 
-  // 3) In case user doesn't have cart, then create new cart for the user
+  const isExceedQuantity =
+    variant?.quantity < amount;
+
+  if (isExceedQuantity)
+    throw new CustomError.BadRequestError(
+      'The requested quantity is not available'
+    );
+  // 3) In case user doesn't have cart
   const cartData = {
     user: user?._id,
     items: [
@@ -119,12 +123,11 @@ export const addItemToCart = async (req, res) => {
         product: productId,
         selectedVariant: variantId,
         amount,
-        totalProductPrice:
-          (variant.priceAfterDiscount || variant.price) * amount,
+        totalProductPrice: calculatedPrice,
       },
     ],
     totalItems: amount,
-    totalPrice: (variant.priceAfterDiscount || variant.price) * amount,
+    totalPrice: calculatedPrice,
   };
   // 4) Create new cart
   const newCart = await Cart.create(cartData);

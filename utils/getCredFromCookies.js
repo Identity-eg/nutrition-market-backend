@@ -1,6 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
 
-export function getCredFromCookies(req) {
+export default function getCredFromCookies(req) {
   const cookies = req.cookies;
   const cartId = cookies['cart_id'] || req.body.cartId;
 
