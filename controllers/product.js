@@ -230,11 +230,11 @@ export const uploadImageLocal = async (req, res) => {
 // ######################################################
 
 export const uploadImage = async (req, res) => {
-  console.log('req.files', req.files);
+  // console.log('req.files', req.files);
   const arrayOfImages = Array.isArray(req.files.image)
     ? req.files.image
     : [req.files.image];
-  console.log('arrayOfImages', arrayOfImages);
+
   const imagesToUpload = arrayOfImages.map(async (img) => {
     return await cloudinary.v2.uploader.upload(img.tempFilePath, {
       use_filename: true,

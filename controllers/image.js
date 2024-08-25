@@ -4,7 +4,7 @@ import CustomError from '../errors/index.js';
 
 // ################# Create Image #################
 export const createImage = async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   const image = await Image.create(req.body);
   res.status(StatusCodes.CREATED).json({ image });
 };

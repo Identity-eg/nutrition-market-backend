@@ -16,14 +16,11 @@ export const getAllUsers = async (req, res) => {
   }
   // Blocked
   if (queryObject.blocked) {
-    console.log(blocked);
     const arrOfBoolean = Array.isArray(blocked)
       ? blocked.map((b) => (b === 'blocked' ? true : false))
       : blocked === 'blocked'
         ? true
         : false;
-
-    console.log(arrOfBoolean);
     queryObject.blocked = { $in: arrOfBoolean };
   }
 

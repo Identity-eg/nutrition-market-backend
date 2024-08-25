@@ -51,7 +51,7 @@ export const createOrder = async (req, res) => {
   // });
 
   const user = await User.findById(req.user._id);
-  console.log(user);
+  // console.log(user);
   const shippingAddress = user.addresses.find(
     (ad) => ad._id.toString() === address
   );
