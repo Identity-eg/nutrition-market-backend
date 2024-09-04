@@ -107,6 +107,7 @@ const productSchema = new Schema(
     },
     directionOfUse: {
       type: String,
+      required: [true, 'Please provide product Direction Of Use'],
     },
     warnings: {
       type: String,

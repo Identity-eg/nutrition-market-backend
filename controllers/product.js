@@ -9,8 +9,6 @@ import CustomError from '../errors/index.js';
 import { USER_ROLES } from '../constants/index.js';
 
 export const createProduct = async (req, res) => {
-  // req.body.user = req.user._id;
-  // req.body.slug = slugify(req.body.variants[0].name, { lower: true });
   const variantsWithSlug = req.body.variants?.map((v) => {
     return {
       ...v,
@@ -42,7 +40,12 @@ export const getAllProducts = async (req, res) => {
   let queryObject = {};
 
   if (name) {
-    queryObject.name = { $regex: name, $options: 'i' };
+    const nameQuery = { $regex: name, $options: 'i' };
+    queryObject['$or'] = [
+      { 'variants.name': nameQuery },
+      { 'nutritionFacts.ingredients.name': nameQuery },
+      { 'nutritionFacts.otherIngredients.name': nameQuery },
+    ];
   }
 
   if (averageRating) {
@@ -53,9 +56,11 @@ export const getAllProducts = async (req, res) => {
     const from = price.split('-')[0];
     const to = price.split('-')[1];
 
-    queryObject.price = {
-      ...(from && { $gte: from }),
-      ...(to && { $lte: to }),
+    queryObject.variants = {
+      $elemMatch: {
+        ...queryObject.variants?.$elemMatch,
+        price: { ...(from && { $gte: from }), ...(to && { $lte: to }) },
+      },
     };
   }
 
@@ -70,10 +75,7 @@ export const getAllProducts = async (req, res) => {
   if (category) {
     queryObject.category = { $elemMatch: { $in: category } };
   }
-  // // Sizes
-  // if (queryObject.sizes) {
-  //   queryObject.sizes = { $elemMatch: { $in: sizes } };
-  // }
+
   const products = await Product.find(queryObject)
     .sort(sort)
     .skip(skip)
