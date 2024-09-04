@@ -83,6 +83,10 @@ export const login = async (req, res) => {
     throw new CustomError.UnauthenticatedError('Invalid Credentials');
   }
 
+  if (user.blocked) {
+    throw new CustomError.UnauthenticatedError('You are banned from admin');
+  }
+
   let userCompany = undefined;
   if (comingFromDashboard) {
     if (!usersAllowedToAccessDashboard.includes(user.role)) {
@@ -96,10 +100,6 @@ export const login = async (req, res) => {
     }
   }
 
-  if (user.blocked) {
-    throw new CustomError.UnauthenticatedError('You are banned from admin');
-  }
-
   const tokenUser = createTokenUser(user);
   const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: '30m',
@@ -110,7 +110,9 @@ export const login = async (req, res) => {
 
   // Create secure cookies
   res.cookie(
-    process.env.REFRESH_TOKEN_NAME,
+    comingFromDashboard
+      ? process.env.REFRESH_TOKEN_ADMIN_NAME
+      : process.env.REFRESH_TOKEN_NAME,
     refreshToken,
     REFRESH_COOKIE_OPTIONS
   );
@@ -133,14 +135,20 @@ export const login = async (req, res) => {
 
 // REFRESH TOKEN #####################
 export const refresh = async (req, res) => {
+  const comingFromDashboard =
+    req.headers['api-key'] &&
+    req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
+  const refreshTokenName = comingFromDashboard
+    ? process.env.REFRESH_TOKEN_ADMIN_NAME
+    : process.env.REFRESH_TOKEN_NAME;
   const cookies = req.cookies;
   // console.log({ cookies: req.cookies });
-  if (!cookies[process.env.REFRESH_TOKEN_NAME])
+  if (!cookies[refreshTokenName])
     throw new CustomError.UnauthenticatedError(
       'Unauthorized you do not have a cookie'
     );
 
-  const refreshToken = cookies[process.env.REFRESH_TOKEN_NAME];
+  const refreshToken = cookies[refreshTokenName];
 
   try {
     const { _id: userId } = jwt.verify(
@@ -182,10 +190,18 @@ export const refresh = async (req, res) => {
 
 // LOGOUT ############################
 export const logout = (req, res) => {
+  const comingFromDashboard =
+    req.headers['api-key'] &&
+    req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
+
+  const refreshTokenName = comingFromDashboard
+    ? process.env.REFRESH_TOKEN_ADMIN_NAME
+    : process.env.REFRESH_TOKEN_NAME;
   const cookies = req.cookies;
-  if (!cookies[process.env.REFRESH_TOKEN_NAME])
+
+  if (!cookies[refreshTokenName])
     return res.status(StatusCodes.NO_CONTENT).json({ message: 'No content' });
-  res.clearCookie(process.env.REFRESH_TOKEN_NAME);
+  res.clearCookie(refreshTokenName);
   res.json({ message: 'Cookie cleared' });
 };
 
