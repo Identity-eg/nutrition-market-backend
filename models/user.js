@@ -9,9 +9,10 @@ const { ObjectId } = Schema.Types;
 const { isEmail } = pkg;
 
 const AddressSchema = new Schema({
-  city: String,
+  governorate: String,
+  district: String,
   street: String,
-  state: String,
+  buildingNo: String,
 });
 
 const userSchema = new Schema(

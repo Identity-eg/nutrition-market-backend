@@ -57,7 +57,7 @@ export const getSingleUser = async (req, res) => {
 
 // ADD ADDRESS  #######################################
 export const addAddress = async (req, res) => {
-  const { city, state, street, userId } = req.body;
+  const { governorate, district, street, buildingNo, userId } = req.body;
 
   const resourceId = userId ?? req.user._id;
 
@@ -65,7 +65,7 @@ export const addAddress = async (req, res) => {
 
   await User.findOneAndUpdate(
     { _id: resourceId },
-    { $push: { addresses: { city, state, street } } },
+    { $push: { addresses: { governorate, district, street, buildingNo } } },
     { runValidators: true }
   );
   res.status(StatusCodes.OK).json({ msg: 'Address added successfully' });
