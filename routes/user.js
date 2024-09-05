@@ -10,6 +10,7 @@ import {
   blockUser,
   getAllUsers,
   getSingleUser,
+  getUserAddresses,
   showCurrentUser,
   updateUser,
   updateUserPassword,
@@ -26,7 +27,10 @@ router.get(
 router.get('/getMe', authenticateUser, showCurrentUser);
 router.patch('/updateUserPassword', authenticateUser, updateUserPassword);
 
-router.post('/address', authenticateUser, addAddress);
+router
+  .route('/address')
+  .get(authenticateUser, getUserAddresses)
+  .post(authenticateUser, addAddress);
 
 router.patch(
   '/block',

@@ -9,10 +9,46 @@ const { ObjectId } = Schema.Types;
 const { isEmail } = pkg;
 
 const AddressSchema = new Schema({
-  governorate: String,
-  district: String,
-  street: String,
-  buildingNo: String,
+  firstName: {
+    type: String,
+    required: [true, 'Please provide an firstName'],
+    minlength: 3,
+  },
+  lastName: {
+    type: String,
+    required: [true, 'Please provide an lastName'],
+    minlength: 3,
+  },
+  phone: {
+    type: Number,
+    required: [true, 'Please provide an lastName'],
+  },
+  additionalPhone: {
+    type: Number,
+  },
+  governorate: {
+    type: String,
+    required: [true, 'Please provide an governorate'],
+    minlength: 3,
+  },
+  district: {
+    type: String,
+    required: [true, 'Please provide an district'],
+    minlength: 3,
+  },
+  street: {
+    type: String,
+    required: [true, 'Please provide an street'],
+    minlength: 3,
+  },
+  buildingNo: {
+    type: String,
+    required: [true, 'Please provide an building Number'],
+  },
+  floor: {
+    type: String,
+    required: [true, 'Please provide an floor'],
+  },
 });
 
 const userSchema = new Schema(

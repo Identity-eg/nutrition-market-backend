@@ -57,7 +57,18 @@ export const getSingleUser = async (req, res) => {
 
 // ADD ADDRESS  #######################################
 export const addAddress = async (req, res) => {
-  const { governorate, district, street, buildingNo, userId } = req.body;
+  const {
+    firstName,
+    lastName,
+    phone,
+    additionalPhone,
+    governorate,
+    district,
+    street,
+    buildingNo,
+    floor,
+    userId,
+  } = req.body;
 
   const resourceId = userId ?? req.user._id;
 
@@ -65,10 +76,35 @@ export const addAddress = async (req, res) => {
 
   await User.findOneAndUpdate(
     { _id: resourceId },
-    { $push: { addresses: { governorate, district, street, buildingNo } } },
+    {
+      $push: {
+        addresses: {
+          firstName,
+          lastName,
+          phone,
+          additionalPhone,
+          governorate,
+          district,
+          street,
+          buildingNo,
+          floor,
+        },
+      },
+    },
     { runValidators: true }
   );
   res.status(StatusCodes.OK).json({ msg: 'Address added successfully' });
+};
+
+// GET USER ADDRESS  #######################################
+export const getUserAddresses = async (req, res) => {
+  const userId = req.user._id;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new CustomError.NotFoundError(`No user with id : ${userId}`);
+  }
+  res.status(StatusCodes.OK).json({ addresses: user.addresses });
 };
 
 // GET ME #############################################
