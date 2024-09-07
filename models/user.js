@@ -31,9 +31,9 @@ const AddressSchema = new Schema({
     required: [true, 'Please provide an governorate'],
     minlength: 3,
   },
-  district: {
+  city: {
     type: String,
-    required: [true, 'Please provide an district'],
+    required: [true, 'Please provide a city'],
     minlength: 3,
   },
   street: {

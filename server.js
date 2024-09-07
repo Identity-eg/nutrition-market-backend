@@ -30,6 +30,7 @@ import imageRoutes from './routes/image.js';
 import trim from './middlewares/trim.js';
 import notFoundMiddleware from './middlewares/not-found.js';
 import errorHandlerMiddleware from './middlewares/error-handler.js';
+import { getGovernorateCities, getGovernorates } from './controllers/egypt.js';
 
 dotenv.config();
 connectDb();
@@ -80,6 +81,8 @@ app.use('/api/sub-categories', subCategoryRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/dosage-forms', dosageFormRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/governorates', getGovernorates);
+app.use('/api/cities/:govId', getGovernorateCities);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
