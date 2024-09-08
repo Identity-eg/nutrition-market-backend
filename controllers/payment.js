@@ -70,6 +70,10 @@ export const createPayment = async (req, res) => {
     });
 
     const data = await response.json();
+
+    if (!response.ok) {
+      throw new CustomError.NotFoundError(data.detail);
+    }
     res.status(StatusCodes.CREATED).json({ clientSecret: data.client_secret });
   } catch (error) {
     throw new CustomError.BadRequestError(error);
