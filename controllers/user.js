@@ -55,61 +55,10 @@ export const getSingleUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user });
 };
 
-// ADD ADDRESS  #######################################
-export const addAddress = async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    phone,
-    additionalPhone,
-    governorate,
-    city,
-    street,
-    buildingNo,
-    floor,
-    userId,
-  } = req.body;
-
-  const resourceId = userId ?? req.user._id;
-
-  chechPermissions(req.user, resourceId);
-
-  await User.findOneAndUpdate(
-    { _id: resourceId },
-    {
-      $push: {
-        addresses: {
-          firstName,
-          lastName,
-          phone,
-          additionalPhone,
-          governorate,
-          city,
-          street,
-          buildingNo,
-          floor,
-        },
-      },
-    },
-    { runValidators: true }
-  );
-  res.status(StatusCodes.OK).json({ msg: 'Address added successfully' });
-};
-
-// GET USER ADDRESS  #######################################
-export const getUserAddresses = async (req, res) => {
-  const userId = req.user._id;
-
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new CustomError.NotFoundError(`No user with id : ${userId}`);
-  }
-  res.status(StatusCodes.OK).json({ addresses: user.addresses });
-};
-
 // GET ME #############################################
 export const showCurrentUser = async (req, res) => {
-  res.status(StatusCodes.OK).json({ user: req.user });
+  const user = await User.findById(req.user._id);
+  res.status(StatusCodes.OK).json({ user });
 };
 
 // UPDATE USER ########################################

@@ -3,7 +3,7 @@ import 'express-async-errors';
 import dotenv from 'dotenv';
 import connectDb from './config/db.js';
 import './config/i18n.js';
-
+import ngrok from 'ngrok';
 // import packages
 // import i18next from 'i18next';
 import cookieParser from 'cookie-parser';
@@ -24,6 +24,9 @@ import subCategoryRoutes from './routes/sub-category.js';
 import companyRoutes from './routes/company.js';
 import dosageFormRoutes from './routes/dosageForm.js';
 import imageRoutes from './routes/image.js';
+import paymentRoutes from './routes/payment.js';
+import addressRoutes from './routes/address.js';
+
 // import colorRoutes from './routes/color.js';
 
 // import custom Middlewares
@@ -81,11 +84,17 @@ app.use('/api/sub-categories', subCategoryRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/dosage-forms', dosageFormRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/addresses', addressRoutes);
 app.use('/api/governorates', getGovernorates);
 app.use('/api/cities/:govId', getGovernorateCities);
+app.use('/api/payment', paymentRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 5000;
-app.listen(port, () => console.log(`server running on port ${port}`));
+app.listen(port, async () => {
+  console.log(`server running on port ${port}`);
+  const url = await ngrok.connect(port);
+  console.log(`Ngrok tunnel on ${url}`);
+});

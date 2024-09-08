@@ -1,167 +1,87 @@
 import fetch from 'node-fetch';
-import Address from '../models/address.js';
 import Cart from '../models/cart.js';
 import { StatusCodes } from 'http-status-codes';
 import CustomError from '../errors/index.js';
 import crypto from 'crypto';
+import User from '../models/user.js';
+import Address from '../models/address.js';
 
-const API_KEY = process.env.PAYMOB_API_KEY;
-const PAYMENT_INTEGRATION_ID = '4827863';
-const IFRAME =
-  'https://accept.paymob.com/api/acceptance/iframes/866526?payment_token='; // put your iframe id here dont use mine
-
-const getToken = async () => {
-  const res = await fetch('https://accept.paymob.com/api/auth/tokens', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ api_key: API_KEY }),
-  });
-  const data = await res.json();
-
-  return data.token;
-};
-
-const createOrder = async (selectedCart, selectedAddress, authToken) => {
-  const firstName = selectedAddress.fullname.split(' ')[0];
-  const lastName = selectedAddress.fullname.split(' ')[1];
-
-  const res = await fetch('https://accept.paymob.com/api/ecommerce/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      auth_token: authToken,
-      delivery_needed: true,
-      amount_cents: (selectedCart.totalPrice + selectedCart.shippingFee) * 100,
-      currency: 'EGP',
-      items: selectedCart.items.reduce((cart, item, i) => {
-        cart.push({
-          name: item.product.name,
-          amount_cents: item.totalProductPrice * 100,
-          description: item.product.description,
-          quantity: item.amount,
-        });
-
-        return cart;
-      }, []),
-
-      shipping_data: {
-        first_name: firstName,
-        last_name: lastName,
-        email: selectedAddress.email,
-        phone_number: selectedAddress.phone,
-
-        country: selectedAddress.goverment,
-        city: selectedAddress.area,
-
-        street: selectedAddress.street,
-        building: selectedAddress.building,
-        apartment: selectedAddress.apartment,
-        floor: selectedAddress.floor,
-
-        postal_code: '01898',
-        // state: "Utah",
-      },
-    }),
-  });
-
-  const data = await res.json();
-  const orderId = data.id;
-
-  return orderId;
-};
-
-const getPaymentToken = async (
-  selectedCart,
-  selectedAddress,
-  authToken,
-  orderId
-) => {
-  const firstName = selectedAddress.fullname.split(' ')[0];
-  const lastName = selectedAddress.fullname.split(' ')[1];
-  const res = await fetch(
-    'https://accept.paymob.com/api/acceptance/payment_keys',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        auth_token: authToken,
-        delivery_needed: true,
-        amount_cents:
-          (selectedCart.totalPrice + selectedCart.shippingFee) * 100,
-        expiration: 600,
-        order_id: orderId,
-        billing_data: {
-          first_name: firstName,
-          last_name: lastName,
-          email: selectedAddress.email,
-          phone_number: selectedAddress.phone,
-
-          country: selectedAddress.goverment,
-          city: selectedAddress.area,
-
-          street: selectedAddress.street,
-          building: selectedAddress.building || 'undefined',
-          apartment: selectedAddress.apartment || 0,
-          floor: selectedAddress.floor || 0,
-
-          postal_code: '01898',
-          // shipping_method: "PKG",
-          // state: "Utah",
-        },
-        currency: 'EGP',
-        integration_id: INTEGRATION_ID,
-        lock_order_when_paid: true,
-      }),
-    }
-  );
-
-  const data = await res.json();
-  const paymentToken = data.token;
-
-  return paymentToken;
+const convertToCent = (price) => {
+  return price * 100;
 };
 
 export const createPayment = async (req, res) => {
-  const selectedAddress = await Address.findById(req.body.addressId);
-  const selectedCart = await Cart.findOne({ user: req.user._id }).populate({
+  const address = await Address.findById(req.body.addressId);
+  const cart = await Cart.findById(req.body.cartId).populate({
     path: 'items.product',
-    select: 'name price description priceAfterDiscount',
+    select: 'variants description',
   });
+  const user = await User.findById(req.user._id);
 
-  if (!selectedAddress) {
+  if (!address) {
     throw new CustomError.BadRequestError('Please provide your address');
   }
-  if (!selectedCart) {
+  if (!cart) {
     throw new CustomError.BadRequestError(
       'No products found in your cart to make order'
     );
   }
 
-  // 1- Get Token
-  const authToken = await getToken();
-  // 2- Make Order & Get Order id
-  const orderId = await createOrder(selectedCart, selectedAddress, authToken);
-  // 3- Get Payement Token
-  const paymentToken = await getPaymentToken(
-    selectedCart,
-    selectedAddress,
-    authToken,
-    orderId
-  );
+  try {
+    const response = await fetch('https://accept.paymob.com/v1/intention/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.PAYMOB_SK}`,
+      },
+      body: JSON.stringify({
+        amount: convertToCent(cart.totalPrice),
+        currency: 'EGP',
+        notification_url: 'http://localhost:5000/api/orders',
+        redirection_url: `http://localhost:5000/api/payment/after-payment?cartId=${cart._id}`,
+        payment_methods: [+req.body.paymentMethodId],
+        items: cart.items.map((item) => {
+          const variant = item.product.variants.find(
+            (v) => v._id.toString() === item.selectedVariant
+          );
+          return {
+            name: variant.name.slice(0, 49),
+            amount: convertToCent(variant.priceAfterDiscount || variant.price),
+            quantity: item.amount,
+          };
+        }),
+        billing_data: {
+          first_name: address.firstName,
+          last_name: address.lastName,
+          street: address.street,
+          building: address.buildingNo,
+          phone_number: address.phone,
+          country: 'EGYPT',
+          state: address.city,
+          email: address.email,
+          floor: address.floor,
+        },
+        customer: {
+          first_name: user.name,
+          last_name: user.name,
+          email: user.email,
+        },
+      }),
+    });
 
-  return res.status(StatusCodes.CREATED).json({
-    paymentToken,
-    paymentLink: ifameOne + paymentToken,
-  });
+    const data = await response.json();
+    res.status(StatusCodes.CREATED).json({ clientSecret: data.client_secret });
+  } catch (error) {
+    throw new CustomError.BadRequestError(error);
+  }
 };
 
 export const afterPayment = async (req, res) => {
-  // res.status(StatusCodes.CREATED).json({ req });
-  // res.send({ isSuccess: req.query.success });
-
   const source_data_pan = req.query['source_data.pan'];
   const source_data_sub_type = req.query['source_data.sub_type'];
   const source_data_type = req.query['source_data.type'];
+  const cartId = req.query.cartId;
+
   const {
     amount_cents,
     created_at,
@@ -209,12 +129,7 @@ export const afterPayment = async (req, res) => {
     .update(concatenateString)
     .digest('hex');
 
-  res.redirect(
-    301,
-    `http://dukamarket.vercel.app/checkout/order/${req.query.order}?success=${
-      req.query.success
-    }&validation=${hash === req.query.hmac}`
-  );
+  await Cart.findByIdAndDelete(cartId);
 
-  // res.status(StatusCodes.CREATED).json({ isSuccess: req.query.success });
+  res.redirect(301, `http://localhost:3000`);
 };

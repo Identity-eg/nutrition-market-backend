@@ -9,7 +9,7 @@ const router = Router();
 
 router
   .route('/')
-  .post(authenticateUser, orderCont.createOrder)
+  .post(orderCont.createOrder)
   .get(
     authenticateUser,
     authorizePermissions(USER_ROLES.superAdmin),

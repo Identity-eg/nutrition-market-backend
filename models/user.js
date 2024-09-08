@@ -8,49 +8,6 @@ const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
 const { isEmail } = pkg;
 
-const AddressSchema = new Schema({
-  firstName: {
-    type: String,
-    required: [true, 'Please provide an firstName'],
-    minlength: 3,
-  },
-  lastName: {
-    type: String,
-    required: [true, 'Please provide an lastName'],
-    minlength: 3,
-  },
-  phone: {
-    type: Number,
-    required: [true, 'Please provide an lastName'],
-  },
-  additionalPhone: {
-    type: Number,
-  },
-  governorate: {
-    type: String,
-    required: [true, 'Please provide an governorate'],
-    minlength: 3,
-  },
-  city: {
-    type: String,
-    required: [true, 'Please provide a city'],
-    minlength: 3,
-  },
-  street: {
-    type: String,
-    required: [true, 'Please provide an street'],
-    minlength: 3,
-  },
-  buildingNo: {
-    type: String,
-    required: [true, 'Please provide an building Number'],
-  },
-  floor: {
-    type: String,
-    required: [true, 'Please provide an floor'],
-  },
-});
-
 const userSchema = new Schema(
   {
     name: {
@@ -90,7 +47,6 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    addresses: [AddressSchema],
     ordersCount: { type: Number, default: 0 },
     resetPasswordToken: String,
     resetPasswordTokenExpiration: Date,
