@@ -55,7 +55,6 @@ export const register = async (req, res) => {
     email: user.email,
     role: user.role,
     ordersCount: user.ordersCount,
-    addresses: user.addresses,
   };
   res.status(StatusCodes.CREATED).json({ user: userResponse, accessToken });
 };
@@ -123,7 +122,6 @@ export const login = async (req, res) => {
     email: user.email,
     role: user.role,
     ordersCount: user.ordersCount,
-    addresses: user.addresses,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     ...(userCompany && { company: userCompany }),
@@ -176,7 +174,6 @@ export const refresh = async (req, res) => {
       email: user.email,
       role: user.role,
       ordersCount: user.ordersCount,
-      addresses: user.addresses,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       ...(userCompany && { company: userCompany }),

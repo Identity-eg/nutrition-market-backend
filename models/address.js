@@ -54,7 +54,6 @@ const address = new Schema({
   },
   floor: {
     type: Number,
-    required: [true, 'Please provide floor'],
   },
 });
 
