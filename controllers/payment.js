@@ -135,5 +135,10 @@ export const afterPayment = async (req, res) => {
 
   await Cart.findByIdAndDelete(cartId);
 
-  res.redirect(301, `http://localhost:3000`);
+  if (hash === req.query.hmac) {
+    res.cookie('encpl', JSON.stringify({ success, orderId: id }), {
+      maxAge: 1000,
+    });
+    res.redirect(301, `http://localhost:3000/orders/status`);
+  }
 };
