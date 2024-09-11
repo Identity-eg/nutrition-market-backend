@@ -10,11 +10,17 @@ const { isEmail } = pkg;
 
 const userSchema = new Schema(
   {
-    name: {
+    firstName: {
       type: String,
-      required: [true, 'Please provide an username'],
+      required: [true, 'Please provide a first name'],
       minlength: 3,
-      maxlength: 50,
+      maxlength: 20,
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Please provide a last name'],
+      minlength: 3,
+      maxlength: 20,
     },
     email: {
       type: String,
@@ -72,6 +78,10 @@ const userSchema = new Schema(
     toObject: { virtuals: true },
   }
 );
+
+userSchema.virtual('fullName').get(function () {
+  return `${this.firstName} ${this.lastName}`;
+});
 
 // Fire a function before doc saved to db
 userSchema.pre('save', async function (next) {

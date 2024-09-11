@@ -57,7 +57,9 @@ export const getSingleUser = async (req, res) => {
 
 // GET ME #############################################
 export const showCurrentUser = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id)
+    .select('-password')
+    .populate('company');
   res.status(StatusCodes.OK).json({ user });
 };
 

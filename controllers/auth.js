@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import { StatusCodes } from 'http-status-codes';
 import crypto from 'crypto';
 import User from '../models/user.js';
-import Company from '../models/company.js';
 import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
@@ -14,7 +13,7 @@ import {
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
-  const { email, name, password, company } = req.body;
+  const { firstName, lastName, email, password, company } = req.body;
 
   const emailUser = await User.findOne({ email });
 
@@ -27,7 +26,8 @@ export const register = async (req, res) => {
 
   const userToBeCreated = {
     email,
-    name,
+    firstName,
+    lastName,
     password,
     role,
     ...(company && { company }),
@@ -49,14 +49,7 @@ export const register = async (req, res) => {
     REFRESH_COOKIE_OPTIONS
   );
 
-  const userResponse = {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    ordersCount: user.ordersCount,
-  };
-  res.status(StatusCodes.CREATED).json({ user: userResponse, accessToken });
+  res.status(StatusCodes.CREATED).json({ accessToken });
 };
 
 // LOGIN USER ########################
@@ -86,17 +79,11 @@ export const login = async (req, res) => {
     throw new CustomError.UnauthenticatedError('You are banned from admin');
   }
 
-  let userCompany = undefined;
-  if (comingFromDashboard) {
-    if (!usersAllowedToAccessDashboard.includes(user.role)) {
-      throw new CustomError.UnauthenticatedError(
-        'Forbidden to access dashboard'
-      );
-    }
-    if (user.role === USER_ROLES.admin) {
-      const company = await Company.findById(user.company);
-      userCompany = company;
-    }
+  if (
+    comingFromDashboard &&
+    !usersAllowedToAccessDashboard.includes(user.role)
+  ) {
+    throw new CustomError.UnauthenticatedError('Forbidden to access dashboard');
   }
 
   const tokenUser = createTokenUser(user);
@@ -116,19 +103,7 @@ export const login = async (req, res) => {
     REFRESH_COOKIE_OPTIONS
   );
 
-  const userResponse = {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    ordersCount: user.ordersCount,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    ...(userCompany && { company: userCompany }),
-  };
-  res
-    .status(StatusCodes.OK)
-    .json({ user: userResponse, accessToken, refreshToken });
+  res.status(StatusCodes.OK).json({ accessToken });
 };
 
 // REFRESH TOKEN #####################
@@ -162,24 +137,7 @@ export const refresh = async (req, res) => {
       expiresIn: '30m',
     });
 
-    let userCompany = undefined;
-    if (user.role === USER_ROLES.admin) {
-      const company = await Company.findById(user.company);
-      userCompany = company;
-    }
-
-    const userResponse = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      ordersCount: user.ordersCount,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      ...(userCompany && { company: userCompany }),
-    };
-
-    return res.json({ accessToken, user: userResponse });
+    return res.json({ accessToken });
   } catch (error) {
     throw new CustomError.UnauthorizedError(`Forbidden ${error.message}`);
   }
