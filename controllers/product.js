@@ -128,7 +128,7 @@ export const getSingleProductReviews = async (req, res) => {
   const reviews = await Review.find({ product: productId }).populate([
     {
       path: 'user',
-      select: 'name',
+      select: 'firstName lastName',
     },
   ]);
   res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
