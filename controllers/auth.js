@@ -103,7 +103,7 @@ export const login = async (req, res) => {
     REFRESH_COOKIE_OPTIONS
   );
 
-  res.status(StatusCodes.OK).json({ accessToken });
+  res.status(StatusCodes.OK).json({ accessToken, refreshToken });
 };
 
 // REFRESH TOKEN #####################
@@ -153,6 +153,7 @@ export const logout = (req, res) => {
     ? process.env.REFRESH_TOKEN_ADMIN_NAME
     : process.env.REFRESH_TOKEN_NAME;
   const cookies = req.cookies;
+  console.log('hiii', cookies);
 
   if (!cookies[refreshTokenName])
     return res.status(StatusCodes.NO_CONTENT).json({ message: 'No content' });
