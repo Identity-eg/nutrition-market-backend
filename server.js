@@ -3,6 +3,8 @@ import 'express-async-errors';
 import dotenv from 'dotenv';
 import connectDb from './config/db.js';
 import './config/i18n.js';
+import ngrok from 'ngrok';
+
 // import packages
 // import i18next from 'i18next';
 import cookieParser from 'cookie-parser';
@@ -94,6 +96,6 @@ app.use(errorHandlerMiddleware);
 const port = process.env.PORT || 5000;
 app.listen(port, async () => {
   console.log(`server running on port ${port}`);
-  // const url = await ngrok.connect(port);
-  // console.log(`Ngrok tunnel on ${url}`);
+  const url = await ngrok.connect(port);
+  console.log(`Ngrok tunnel on ${url}`);
 });

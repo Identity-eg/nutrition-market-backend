@@ -5,6 +5,7 @@ import Product from '../models/product.js';
 import { StatusCodes } from 'http-status-codes';
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
+import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
 
 // const fakeStripeAPI = async ({ amount, currency }) => {
 //   const client_secret = 'someRandomValue';
@@ -13,62 +14,36 @@ import { checkPermissions } from '../utils/index.js';
 
 // CREATE ORDER ################
 export const createOrder = async (req, res) => {
-  const { items: cartItems, shippingFee, address } = req.body;
+  const user =
+    req.body.intention?.extras?.creation_extras?.userId || req.user._id;
+  const paymentIntentId = req.body.intention?.id;
+  const clientSecret = req.body.intention?.client_secret;
+  const shippingAddress =
+    req.body.intention?.extras?.creation_extras?.addressId;
+  const amount = req.body.intention?.intention_detail?.amount;
+  const orderItems = req.body.intention?.extras?.creation_extras?.cartItems;
 
-  if (!cartItems || cartItems.length < 1) {
-    throw new CustomError.BadRequestError('No cart items provided');
+  if (!req.body.transaction?.success) {
+    throw new CustomError.BadRequestError(
+      'Something went wrong while creating your order'
+    );
   }
-
-  let orderItems = [];
-  let subtotal = 0;
-
-  for (const item of cartItems) {
-    const product = await Product.findOne({ _id: item.product });
-    if (!product) {
-      throw new CustomError.NotFoundError(
-        `No product with id : ${item.product}`
-      );
-    }
-    const { name, price, images, _id } = product;
-    const singleOrderItem = {
-      amount: item.amount,
-      name,
-      price,
-      image: images[0].url,
-      product: _id,
-    };
-    // add item to order
-    orderItems = [...orderItems, singleOrderItem];
-    // calculate subtotal
-    subtotal += item.amount * price;
-  }
-  // calculate total
-  const total = shippingFee + subtotal;
-  // get client secret
-  // const paymentIntent = await fakeStripeAPI({
-  //   amount: total,
-  //   currency: 'usd',
-  // });
-
-  const user = await User.findById(req.user._id);
-  // console.log(user);
-  const shippingAddress = user.addresses.find(
-    (ad) => ad._id.toString() === address
-  );
-
-  if (!shippingAddress) {
-    throw new CustomError.NotFoundError(`Please provide an address`);
-  }
-
-  const order = await Order.create({
-    user: req.user._id,
+  const newOrder = {
+    user,
     orderItems,
-    total,
-    subtotal,
-    shippingFee,
+    total: amount,
+    subtotal: amount,
+    shippingFee: 0,
     shippingAddress,
-    // clientSecret: paymentIntent.client_secret,
-  });
+    clientSecret,
+    paymentIntentId,
+    paid: true,
+    paymentMethod:
+      PAYMENT_METHODS[req.body.intention.payment_methods[0].integration_id] ??
+      PAYMENT_METHODS.cashOnDelivery,
+  };
+
+  const order = await Order.create(newOrder);
 
   res
     .status(StatusCodes.CREATED)

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { countOrdersByUser } from '../middlewares/aggregations.js';
+import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -10,10 +11,9 @@ const SingleOrderItemSchema = new Schema({
     ref: 'Product',
     required: true,
   },
-  amount: { type: Number, default: 0 },
-  price: { type: Number, required: true },
-  name: { type: String, required: true },
-  image: { type: String, required: true },
+  amount: { type: Number, default: 1 },
+  selectedVariant: String,
+  totalProductPrice: String,
 });
 
 const orderSchema = new Schema(
@@ -38,22 +38,13 @@ const orderSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'processing', 'shipped', 'delivered', 'canceled'],
-      default: 'pending',
+      enum: ['processing', 'shipped', 'delivered', 'canceled'],
+      default: 'processing',
     },
     shippingAddress: {
-      street: {
-        type: String,
-        required: true,
-      },
-      city: {
-        type: String,
-        required: true,
-      },
-      state: {
-        type: String,
-        required: true,
-      },
+      type: ObjectId,
+      ref: 'Address',
+      required: true,
     },
     clientSecret: {
       type: String,
@@ -61,6 +52,20 @@ const orderSchema = new Schema(
     },
     paymentIntentId: {
       type: String,
+    },
+    paid: {
+      type: Boolean,
+      required: true,
+    },
+    paymentMethod: {
+      type: {
+        id: String,
+        name: {
+          type: String,
+          enum: Object.values(PAYMENT_METHODS).map((pm) => pm.name),
+          required: true,
+        },
+      },
     },
   },
   {

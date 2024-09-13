@@ -27,57 +27,58 @@ export const createPayment = async (req, res) => {
     );
   }
 
-  try {
-    const response = await fetch('https://accept.paymob.com/v1/intention/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.PAYMOB_SK}`,
-      },
-      body: JSON.stringify({
-        amount: convertToCent(cart.totalPrice),
-        currency: 'EGP',
-        notification_url: 'http://localhost:5000/api/orders',
-        redirection_url: `http://localhost:5000/api/payment/after-payment?cartId=${cart._id}`,
-        payment_methods: [+req.body.paymentMethodId],
-        items: cart.items.map((item) => {
-          const variant = item.product.variants.find(
-            (v) => v._id.toString() === item.selectedVariant
-          );
-          return {
-            name: variant.name.slice(0, 49),
-            amount: convertToCent(variant.priceAfterDiscount || variant.price),
-            quantity: item.amount,
-          };
-        }),
-        billing_data: {
-          first_name: address.firstName,
-          last_name: address.lastName,
-          street: address.street,
-          building: address.buildingNo,
-          phone_number: address.phone,
-          country: 'EGYPT',
-          state: address.city,
-          email: address.email,
-          floor: address.floor,
-        },
-        customer: {
-          first_name: user.name,
-          last_name: user.name,
-          email: user.email,
-        },
+  const response = await fetch('https://accept.paymob.com/v1/intention/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.PAYMOB_SK}`,
+    },
+    body: JSON.stringify({
+      amount: convertToCent(cart.totalPrice),
+      currency: 'EGP',
+      // notification_url: 'http://localhost:5000/api/orders',
+      redirection_url: `http://localhost:5000/api/payment/after-payment?cartId=${cart._id}`,
+      payment_methods: [+req.body.paymentMethodId],
+      items: cart.items.map((item) => {
+        const variant = item.product.variants.find(
+          (v) => v._id.toString() === item.selectedVariant
+        );
+        return {
+          name: variant.name.slice(0, 49),
+          amount: convertToCent(variant.priceAfterDiscount || variant.price),
+          quantity: item.amount,
+        };
       }),
-    });
+      billing_data: {
+        first_name: address.firstName,
+        last_name: address.lastName,
+        street: address.street,
+        building: address.buildingNo,
+        phone_number: address.phone,
+        country: 'EGYPT',
+        state: address.city,
+        email: address.email,
+        floor: address.floor,
+      },
+      customer: {
+        first_name: user.name,
+        last_name: user.name,
+        email: user.email,
+      },
+      extras: {
+        userId: user._id,
+        cartItems: cart.items,
+        addressId: address._id,
+      },
+    }),
+  });
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (!response.ok) {
-      throw new CustomError.NotFoundError(data.detail);
-    }
-    res.status(StatusCodes.CREATED).json({ clientSecret: data.client_secret });
-  } catch (error) {
-    throw new CustomError.BadRequestError(error);
+  if (!response.ok) {
+    throw new CustomError.NotFoundError(data.detail);
   }
+  res.status(StatusCodes.CREATED).json({ clientSecret: data.client_secret });
 };
 
 export const afterPayment = async (req, res) => {
