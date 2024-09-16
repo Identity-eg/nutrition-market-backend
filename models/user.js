@@ -13,13 +13,13 @@ const userSchema = new Schema(
     firstName: {
       type: String,
       required: [true, 'Please provide a first name'],
-      minlength: 3,
+      minlength: [2, 'First name must be at least 2 characters'],
       maxlength: 20,
     },
     lastName: {
       type: String,
       required: [true, 'Please provide a last name'],
-      minlength: 3,
+      minlength: [2, 'Last name must be at least 2 characters'],
       maxlength: 20,
     },
     email: {

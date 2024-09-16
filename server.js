@@ -96,6 +96,6 @@ app.use(errorHandlerMiddleware);
 const port = process.env.PORT || 5000;
 app.listen(port, async () => {
   console.log(`server running on port ${port}`);
-  const url = await ngrok.connect(port);
-  console.log(`Ngrok tunnel on ${url}`);
+  // const url = await ngrok.connect(port);
+  // console.log(`Ngrok tunnel on ${url}`);
 });

@@ -71,33 +71,33 @@ export const getAllOrders = async (req, res) => {
   const orders = await Order.find(queryObject)
     .populate({
       path: 'user',
-      match: { name: new RegExp(name, 'i') },
-      select: 'name email',
+      select: 'firstName lastName email',
       options: { _recursed: true },
     })
     .sort(sort)
     .skip(skip)
     .limit(limit);
 
-  // Filter out orders with no matched user
-  const filteredOrders = orders.filter((order) => order.user);
   const ordersCount = await Order.countDocuments(queryObject);
   const lastPage = Math.ceil(ordersCount / limit);
   res.status(StatusCodes.OK).json({
     totalCount: ordersCount,
     currentPage: Number(page),
     lastPage,
-    orders: filteredOrders,
+    orders,
   });
 };
 
 // GET SINGLE ORDER ############
 export const getSingleOrder = async (req, res) => {
   const { id: orderId } = req.params;
-  const order = await Order.findOne({ _id: orderId }).populate({
-    path: 'orderItems.product',
-    select: 'description images',
-  });
+  const order = await Order.findOne({ _id: orderId }).populate([
+    {
+      path: 'orderItems.product',
+      select: 'variants',
+    },
+    { path: 'shippingAddress' },
+  ]);
   if (!order) {
     throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
   }

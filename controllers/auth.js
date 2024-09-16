@@ -29,9 +29,10 @@ export const register = async (req, res) => {
     firstName,
     lastName,
     password,
-    role,
+    ...(role && { role }),
     ...(company && { company }),
   };
+
   const user = await User.create(userToBeCreated);
 
   const tokenUser = createTokenUser(user);
@@ -49,7 +50,7 @@ export const register = async (req, res) => {
     REFRESH_COOKIE_OPTIONS
   );
 
-  res.status(StatusCodes.CREATED).json({ accessToken });
+  res.status(StatusCodes.CREATED).json({ accessToken, refreshToken });
 };
 
 // LOGIN USER ########################
