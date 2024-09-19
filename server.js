@@ -16,6 +16,7 @@ import cloudinary from 'cloudinary';
 // import Routes
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/product.js';
+import variantRoutes from './routes/variant.js';
 import cartRoutes from './routes/cart.js';
 import userRoutes from './routes/user.js';
 import reviewRoutes from './routes/review.js';
@@ -77,6 +78,7 @@ app.use(fileUpload({ useTempFiles: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/variants', variantRoutes);
 app.use('/api/carts', cartRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);

@@ -14,25 +14,30 @@ const cartSchema = new Schema(
         product: {
           type: Schema.Types.ObjectId,
           ref: 'Product',
+          required: true,
         },
-        selectedVariant: String,
+        variant: {
+          type: Schema.Types.ObjectId,
+          ref: 'Variant',
+          required: true,
+        },
         amount: {
           type: Number,
-          default: 0,
+          default: 1,
         },
         totalProductPrice: {
           type: Number,
-          default: 0,
+          required: true,
         },
       },
     ],
     totalItems: {
       type: Number,
-      default: 0,
+      default: 1,
     },
     totalPrice: {
       type: Number,
-      default: 0,
+      required: true,
     },
     shippingFee: {
       type: Number,

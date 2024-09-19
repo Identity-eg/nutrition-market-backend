@@ -1,23 +1,14 @@
 import path from 'path';
 import cloudinary from 'cloudinary';
 import { StatusCodes } from 'http-status-codes';
-import slugify from 'slugify';
 
 import Product from '../models/product.js';
 import Review from '../models/review.js';
 import CustomError from '../errors/index.js';
 import { USER_ROLES } from '../constants/index.js';
+import Variant from '../models/variant.js';
 
 export const createProduct = async (req, res) => {
-  const variantsWithSlug = req.body.variants?.map((v) => {
-    return {
-      ...v,
-      slug: slugify(v.name ?? '', { lower: true }),
-    };
-  });
-
-  req.body.variants = variantsWithSlug;
-
   const product = await Product.create(req.body);
   res.status(StatusCodes.CREATED).json({ product });
 };
@@ -80,11 +71,14 @@ export const getAllProducts = async (req, res) => {
     .sort(sort)
     .skip(skip)
     .limit(limit)
-    .populate({
-      path: 'category company dosageForm',
-      select: 'name slug',
-      options: { _recursed: true },
-    });
+    .populate([
+      {
+        path: 'category company dosageForm',
+        select: 'name slug',
+        options: { _recursed: true },
+      },
+      { path: 'variants' },
+    ]);
 
   const productsCount = await Product.countDocuments(queryObject);
   const lastPage = Math.ceil(productsCount / limit);
@@ -102,10 +96,9 @@ export const getSingleProduct = async (req, res) => {
   const { id: productId } = req.params;
 
   const product = await Product.findOne({ _id: productId }).populate([
-    // {
-    //   path: 'reviews',
-    //   populate: { path: 'user', select: 'name' },
-    // },
+    {
+      path: 'variants',
+    },
     {
       path: 'category company dosageForm',
       select: 'name',
@@ -138,15 +131,6 @@ export const getSingleProductReviews = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   const { id: productId } = req.params;
-
-  if (req.body.variants) {
-    const variantsWithSlug = req.body.variants?.map((v) => ({
-      ...v,
-      slug: slugify(v.name ?? '', { lower: true }),
-    }));
-
-    req.body.variants = variantsWithSlug;
-  }
 
   const product = await Product.findById(productId);
   if (!product) {
@@ -196,6 +180,9 @@ export const deleteProduct = async (req, res) => {
   }
 
   await product.deleteOne();
+  product.variants.map(async (variant) => {
+    await Variant.findByIdAndDelete(variant);
+  });
 
   res.status(StatusCodes.OK).json({ msg: 'Success! Product removed.' });
 };
