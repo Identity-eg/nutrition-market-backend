@@ -3,6 +3,7 @@ import Cart from '../models/cart.js';
 import Product from '../models/product.js';
 import CustomError from '../errors/index.js';
 import { getCredFromCookies } from '../utils/index.js';
+import Variant from '../models/variant.js';
 
 // ################# Get Cart #################
 export const getCart = async (req, res) => {
@@ -14,7 +15,7 @@ export const getCart = async (req, res) => {
       { $and: [{ user: { $exists: false } }, { _id: cartId }] },
     ],
   }).populate({
-    path: 'variant',
+    path: 'items.variant',
   });
 
   if (!cart) {
@@ -22,22 +23,7 @@ export const getCart = async (req, res) => {
       cart: { user: undefined, items: [], totalItems: 0, totalPrice: 0 },
     });
   }
-
-  const normalizedCart = cart.toObject();
-
-  const newCart = {
-    ...normalizedCart,
-    items: normalizedCart?.items?.map((item) => {
-      const { selectedVariant, product } = item;
-      return {
-        ...item,
-        selectedVariant: product.variants.find((v) => {
-          return v._id.toString() === selectedVariant;
-        }),
-      };
-    }),
-  };
-  return res.status(StatusCodes.OK).json({ cart: newCart });
+  return res.status(StatusCodes.OK).json({ cart });
 };
 
 // #################### Add To Cart ####################
@@ -47,8 +33,10 @@ export const addItemToCart = async (req, res) => {
 
   // 1) Check if product doesn't exist
   const product = await Product.findById(productId);
-  if (!product) {
-    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  const variant = await Variant.findById(variantId);
+
+  if (!product || !variant) {
+    throw new CustomError.NotFoundError(`No product or variant with this id`);
   }
 
   const { user, cartId } = getCredFromCookies(req);
@@ -60,7 +48,6 @@ export const addItemToCart = async (req, res) => {
       { $and: [{ user: { $exists: false } }, { _id: cartId }] },
     ],
   });
-  const variant = product.variants.find((v) => v._id.toString() === variantId);
   const calculatedPrice =
     (variant.priceAfterDiscount || variant.price) * amount;
 
@@ -69,7 +56,7 @@ export const addItemToCart = async (req, res) => {
     const itemIndex = cart.items.findIndex(
       (item) =>
         item.product.toString() === productId.toString() &&
-        item?.selectedVariant?.toString() === variantId?.toString()
+        item?.variant?.toString() === variantId?.toString()
     );
     const isExceedQuantity =
       variant?.quantity < (cart.items[itemIndex]?.amount ?? 0) + amount;
@@ -83,7 +70,7 @@ export const addItemToCart = async (req, res) => {
       // in case item doesn't exist
       cart.items.push({
         product: productId,
-        selectedVariant: variantId,
+        variant: variantId,
         amount,
         totalProductPrice: calculatedPrice,
       });
@@ -119,7 +106,7 @@ export const addItemToCart = async (req, res) => {
     items: [
       {
         product: productId,
-        selectedVariant: variantId,
+        variant: variantId,
         amount,
         totalProductPrice: calculatedPrice,
       },
@@ -127,6 +114,7 @@ export const addItemToCart = async (req, res) => {
     totalItems: amount,
     totalPrice: calculatedPrice,
   };
+
   // 4) Create new cart
   const newCart = await Cart.create(cartData);
 
@@ -156,7 +144,7 @@ export const syncCart = async (req, res) => {
         if (!acc[item.product])
           acc[item.product] = {
             product: item.product,
-            selectedVariant: item.selectedVariant,
+            variant: item.variant,
             _id: item._id,
             amount: 0,
             totalProductPrice: 0,
@@ -194,8 +182,7 @@ export const increaseByone = async (req, res) => {
       { $and: [{ user: { $exists: false } }, { _id: cartId }] },
     ],
   }).populate({
-    path: 'items.product',
-    select: 'variants',
+    path: 'items.variant',
   });
 
   if (!cart) {
@@ -210,12 +197,10 @@ export const increaseByone = async (req, res) => {
   if (itemIndex === -1)
     throw new CustomError.NotFoundError(`No item with id: ${itemId}`);
 
-  const variant = cart.items[itemIndex].product.variants.find(
-    (v) => v._id.toString() === cart.items[itemIndex].selectedVariant
-  );
-  const calculatedPrice = variant.priceAfterDiscount || variant.price;
+  const item = cart.items[itemIndex];
+  const calculatedPrice = item.variant.priceAfterDiscount || item.variant.price;
 
-  const isExceedQuantity = variant.quantity === cart.items[itemIndex].amount;
+  const isExceedQuantity = item.variant.quantity === item.amount;
 
   if (isExceedQuantity)
     throw new CustomError.BadRequestError(
@@ -251,8 +236,7 @@ export const reduceByone = async (req, res) => {
       { $and: [{ user: { $exists: false } }, { _id: cartId }] },
     ],
   }).populate({
-    path: 'items.product',
-    select: 'variants',
+    path: 'items.variant',
   });
 
   // Find item index in the cart
@@ -262,13 +246,11 @@ export const reduceByone = async (req, res) => {
   if (itemIndex === -1)
     throw new CustomError.NotFoundError(`No item with id: ${itemId}`);
 
-  const variant = cart.items[itemIndex].product.variants.find(
-    (v) => v._id.toString() === cart.items[itemIndex].selectedVariant
-  );
-  const calculatedPrice = variant.priceAfterDiscount || variant.price;
+  const item = cart.items[itemIndex];
+  const calculatedPrice = item.variant.priceAfterDiscount || item.variant.price;
 
-  if (cart.items[itemIndex].amount === 1) {
-    cart.totalPrice -= cart.items[itemIndex].product.price;
+  if (item.amount === 1) {
+    cart.totalPrice -= item.variant.price;
     cart.items = cart.items.filter(
       (item) => item._id.toString() !== itemId.toString()
     );

@@ -13,8 +13,7 @@ const convertToCent = (price) => {
 export const createPayment = async (req, res) => {
   const address = await Address.findById(req.body.addressId);
   const cart = await Cart.findById(req.body.cartId).populate({
-    path: 'items.product',
-    select: 'variants description',
+    path: 'items.variant',
   });
   const user = await User.findById(req.user._id);
 
@@ -39,16 +38,15 @@ export const createPayment = async (req, res) => {
       // notification_url: 'http://localhost:5000/api/orders',
       redirection_url: `http://localhost:5000/api/payment/after-payment?cartId=${cart._id}`,
       payment_methods: [+req.body.paymentMethodId],
-      items: cart.items.map((item) => {
-        const variant = item.product.variants.find(
-          (v) => v._id.toString() === item.selectedVariant
-        );
-        return {
-          name: variant.name.slice(0, 49),
-          amount: convertToCent(variant.priceAfterDiscount || variant.price),
-          quantity: item.amount,
-        };
-      }),
+
+      items: cart.items.map((item) => ({
+        name: item.variant.name.slice(0, 49),
+        amount: convertToCent(
+          item.variant.priceAfterDiscount || item.variant.price
+        ),
+        quantity: item.amount,
+      })),
+
       billing_data: {
         first_name: address.firstName,
         last_name: address.lastName,

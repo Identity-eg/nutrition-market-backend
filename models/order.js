@@ -12,7 +12,7 @@ const SingleOrderItemSchema = new Schema({
     required: true,
   },
   amount: { type: Number, default: 1 },
-  selectedVariant: String,
+  variant: String,
   totalProductPrice: String,
 });
 
