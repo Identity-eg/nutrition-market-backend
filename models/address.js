@@ -53,7 +53,7 @@ const address = new Schema({
     required: [true, 'Please provide building number'],
   },
   floor: {
-    type: Number,
+    type: String,
   },
 });
 

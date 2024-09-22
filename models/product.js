@@ -8,56 +8,6 @@ import {
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
 
-// const variantSchema = new Schema(
-//   {
-//     name: {
-//       type: String,
-//       required: [true, 'Please provide product name'],
-//       maxlength: [100, 'Name can not be more than 100 characters'],
-//     },
-//     slug: {
-//       type: String,
-//       unique: true,
-//       required: [true, 'Please provide product slug'],
-//     },
-//     unitCount: {
-//       type: Number,
-//       required: [true, 'Please provide product unit count'],
-//     },
-//     flavor: {
-//       type: String,
-//     },
-//     quantity: {
-//       type: Number,
-//       required: [true, 'Please provide product quantity'],
-//     },
-//     sold: {
-//       type: Number,
-//       default: 0,
-//     },
-//     price: {
-//       type: Number,
-//       required: [true, 'Please provide product price'],
-//     },
-//     priceAfterDiscount: {
-//       type: Number,
-//     },
-//     images: {
-//       type: [
-//         {
-//           url: String,
-//           name: String,
-//           size: Number,
-//         },
-//       ],
-//       required: [true, 'Please provide product image'],
-//     },
-//   },
-//   {
-//     timestamps: true,
-//   }
-// );
-
 const productSchema = new Schema(
   {
     description: {

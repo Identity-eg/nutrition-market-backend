@@ -25,6 +25,32 @@ export const getAddresses = async (req, res) => {
   res.status(StatusCodes.CREATED).json({ addresses });
 };
 
+export const getSingleAddress = async (req, res) => {
+  const address = await Address.findById(req.params.addressId);
+  if (!address) {
+    throw new CustomError.BadRequestError('No address found with this id');
+  }
+  res.status(StatusCodes.CREATED).json({ address });
+};
+
+export const updateAddress = async (req, res) => {
+  console.log(req.body, req.params);
+
+  const address = await Address.findById(req.params.addressId);
+  if (!address) {
+    throw new CustomError.BadRequestError('No address found with this id');
+  }
+  const updatedAddress = await Address.findOneAndUpdate(
+    { _id: req.params.addressId },
+    req.body,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+  res.status(StatusCodes.CREATED).json({ address: updatedAddress });
+};
+
 export const deleteAddress = async (req, res) => {
   const selectedAddressId = req.body.addressId;
   const selectedAddress = await Address.findOneAndRemove({

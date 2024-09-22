@@ -9,11 +9,6 @@ const variantSchema = new Schema(
       required: [true, 'Please provide product name'],
       maxlength: [100, 'Name can not be more than 100 characters'],
     },
-    slug: {
-      type: String,
-      unique: true,
-      required: [true, 'Please provide product slug'],
-    },
     unitCount: {
       type: Number,
       required: [true, 'Please provide product unit count'],
@@ -44,7 +39,10 @@ const variantSchema = new Schema(
           size: Number,
         },
       ],
-      required: [true, 'Please provide product image'],
+      validate: {
+        validator: (v) => Array.isArray(v) && v.length > 0,
+        message: 'Please provide at least 1 image',
+      },
     },
   },
   {

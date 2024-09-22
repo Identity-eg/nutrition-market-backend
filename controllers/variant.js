@@ -1,13 +1,10 @@
-import slugify from 'slugify';
 import { StatusCodes } from 'http-status-codes';
 import Variant from '../models/variant.js';
 import CustomError from '../errors/index.js';
 
 export const createVariant = async (req, res) => {
-  const slug = slugify(req.body.name ?? '', { lower: true });
   const variant = await Variant.create({
     name: req.body.name,
-    slug,
     unitCount: req.body.unitCount,
     quantity: req.body.quantity,
     price: req.body.price,

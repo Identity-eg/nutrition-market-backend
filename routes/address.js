@@ -9,6 +9,10 @@ router
   .get(authenticateUser, controllers.getAddresses)
   .post(authenticateUser, controllers.createAddress);
 
-router.delete('/:addressId', authenticateUser, controllers.deleteAddress);
+router
+  .route('/:addressId')
+  .get(authenticateUser, controllers.getSingleAddress)
+  .patch(authenticateUser, controllers.updateAddress)
+  .delete(authenticateUser, controllers.deleteAddress);
 
 export default router;
