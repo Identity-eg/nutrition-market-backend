@@ -9,7 +9,7 @@ import {
   getSingleProduct,
   updateProduct,
   deleteProduct,
-  uploadImage,
+  // uploadImage,
   getSimilarProducts,
   getSingleProductReviews,
 } from '../controllers/product.js';
@@ -19,15 +19,15 @@ const router = Router();
 
 router.route('/').post(createProduct).get(getAllProducts);
 
-router
-  .route('/uploadImage')
-  .post(
-    [
-      authenticateUser,
-      authorizePermissions(USER_ROLES.superAdmin, USER_ROLES.admin),
-    ],
-    uploadImage
-  );
+// router
+//   .route('/uploadImage')
+//   .post(
+//     [
+//       authenticateUser,
+//       authorizePermissions(USER_ROLES.superAdmin, USER_ROLES.admin),
+//     ],
+//     uploadImage
+//   );
 
 router
   .route('/:id')

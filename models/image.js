@@ -5,13 +5,11 @@ const { ObjectId } = Schema.Types;
 
 const imageSchema = new Schema({
   image: {
-    type: [
-      {
-        url: String,
-        name: String,
-        size: Number,
-      },
-    ],
+    type: {
+      url: String,
+      name: String,
+      size: Number,
+    },
     required: [true, 'Please provide product image'],
   },
   title: String,

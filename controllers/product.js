@@ -1,5 +1,3 @@
-import path from 'path';
-import cloudinary from 'cloudinary';
 import { StatusCodes } from 'http-status-codes';
 
 import Product from '../models/product.js';
@@ -185,66 +183,6 @@ export const deleteProduct = async (req, res) => {
   });
 
   res.status(StatusCodes.OK).json({ msg: 'Success! Product removed.' });
-};
-
-// ######################################################
-
-export const uploadImageLocal = async (req, res) => {
-  if (!req.files) {
-    throw new CustomError.BadRequestError('No File Uploaded');
-  }
-  const productImage = req.files.image;
-
-  if (!productImage.mimetype.startsWith('image')) {
-    throw new CustomError.BadRequestError('Please Upload Image');
-  }
-
-  const maxSize = 1024 * 1024;
-
-  if (productImage.size > maxSize) {
-    throw new CustomError.BadRequestError(
-      'Please upload image smaller than 1MB'
-    );
-  }
-  const dirname = path.resolve(path.dirname(''));
-  const imagePath = path.join(
-    dirname,
-    './public/uploads/' + `${productImage.name}`
-  );
-
-  await productImage.mv(imagePath);
-  res.status(StatusCodes.OK).json({ image: `/uploads/${productImage.name}` });
-};
-
-// ######################################################
-
-export const uploadImage = async (req, res) => {
-  // console.log('req.files', req.files);
-  const arrayOfImages = Array.isArray(req.files.image)
-    ? req.files.image
-    : [req.files.image];
-
-  const imagesToUpload = arrayOfImages.map(async (img) => {
-    return await cloudinary.v2.uploader.upload(img.tempFilePath, {
-      use_filename: true,
-      folder: 'supplement-food',
-    });
-  });
-
-  // arrayOfImages.forEach((img) => {
-  //   fs.unlinkSync(img.tempFilePath);
-  // });
-
-  const results = await Promise.all(imagesToUpload);
-  // fs.unlinkSync(req.files.image.tempFilePath);
-  // const result = await cloudinary.v2.uploader.upload(
-  //   req.files.image.tempFilePath,
-  //   { use_filename: true, folder: 'supplement-food' }
-  // );
-  console.log('results', results);
-  res
-    .status(StatusCodes.OK)
-    .json({ images: results.map((img) => img.secure_url) });
 };
 
 // ###########################################

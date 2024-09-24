@@ -39,10 +39,6 @@ const cartSchema = new Schema(
       type: Number,
       required: true,
     },
-    shippingFee: {
-      type: Number,
-      default: 50,
-    },
     expireAt: {
       type: Date,
       default: dayjs().add(15, 'd'),

@@ -1,20 +1,16 @@
 import express from 'express';
 import 'express-async-errors';
 import dotenv from 'dotenv';
-import connectDb from './config/db.js';
-import './config/i18n.js';
-import ngrok from 'ngrok';
-
-// import packages
-// import i18next from 'i18next';
+import { v2 as cloudinary } from 'cloudinary';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import fileUpload from 'express-fileupload';
-import cloudinary from 'cloudinary';
-// import i18nMiddleware from 'i18next-http-middleware';
+
+import connectDb from './config/db.js';
+// import ngrok from 'ngrok';
 
 // import Routes
 import authRoutes from './routes/auth.js';
+import uploadRoutes from './routes/upload.js';
 import productRoutes from './routes/product.js';
 import variantRoutes from './routes/variant.js';
 import cartRoutes from './routes/cart.js';
@@ -29,8 +25,6 @@ import imageRoutes from './routes/image.js';
 import paymentRoutes from './routes/payment.js';
 import addressRoutes from './routes/address.js';
 
-// import colorRoutes from './routes/color.js';
-
 // import custom Middlewares
 import trim from './middlewares/trim.js';
 import notFoundMiddleware from './middlewares/not-found.js';
@@ -40,7 +34,7 @@ import { getGovernorateCities, getGovernorates } from './controllers/egypt.js';
 dotenv.config();
 connectDb();
 
-cloudinary.v2.config({
+cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET,
@@ -49,12 +43,10 @@ cloudinary.v2.config({
 // init App
 const app = express();
 
-// middlewares
 app.use(
   cors({
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-    // preflightContinue: true,
     origin: [
       'https://elgendy-admin-dashboard.vercel.app',
       'http://localhost:3000',
@@ -64,18 +56,13 @@ app.use(
     ],
   })
 );
-
-// app.use(i18nMiddleware.handle(i18next));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(trim);
 app.use(cookieParser());
-app.use(express.static('./public'));
-// When you upload a file, the file will be accessible from req.files
-app.use(fileUpload({ useTempFiles: true }));
 
-// Use Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/variants', variantRoutes);
