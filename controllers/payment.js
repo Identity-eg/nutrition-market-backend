@@ -36,7 +36,7 @@ export const createPayment = async (req, res) => {
       amount: convertToCent(cart.totalPrice),
       currency: 'EGP',
       // notification_url: 'http://localhost:5000/api/orders',
-      redirection_url: `http://localhost:5000/api/payment/after-payment?cartId=${cart._id}`,
+      // redirection_url: `http://localhost:5000/api/payment/after-payment?cartId=${cart._id}`,
       payment_methods: [+req.body.paymentMethodId],
 
       items: cart.items.map((item) => ({
