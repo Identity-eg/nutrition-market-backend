@@ -34,8 +34,6 @@ export const getSingleAddress = async (req, res) => {
 };
 
 export const updateAddress = async (req, res) => {
-  console.log(req.body, req.params);
-
   const address = await Address.findById(req.params.addressId);
   if (!address) {
     throw new CustomError.BadRequestError('No address found with this id');

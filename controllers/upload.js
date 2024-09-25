@@ -53,8 +53,6 @@ export const uploadMultipleImage = async (req, res) => {
     for (const file of req.files) {
       const { buffer } = file;
       const result = await uploadToCloudinary(buffer);
-      console.log(result);
-
       images.push(result.secure_url);
     }
     res.status(StatusCodes.OK).json({ images });

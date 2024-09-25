@@ -83,8 +83,23 @@ app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 5000;
+// (async function () {
+//   console.log('Initializing Ngrok tunnel...');
+
+//   // Initialize ngrok using auth token and hostname
+//   const url = await ngrok.connect({
+//     proto: 'http',
+//     // Your authtoken if you want your hostname to be the same everytime
+//     authtoken: '',
+//     // Your hostname if you want your hostname to be the same everytime
+//     hostname: '',
+//     // Your app port
+//     addr: port,
+//   });
+
+//   console.log(`Listening on url ${url}`);
+//   console.log('Ngrok tunnel initialized!');
+// })();
 app.listen(port, async () => {
   console.log(`server running on port ${port}`);
-  // const url = await ngrok.connect(port);
-  // console.log(`Ngrok tunnel on ${url}`);
 });
