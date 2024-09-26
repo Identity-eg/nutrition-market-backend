@@ -132,7 +132,7 @@ export const afterPayment = async (req, res) => {
     .update(concatenateString)
     .digest('hex');
 
-  await Cart.findByIdAndDelete(cartId);
+  // await Cart.findByIdAndDelete(cartId);
 
   if (hash === req.query.hmac) {
     res.cookie('encpl', JSON.stringify({ success, orderId: id }), {
