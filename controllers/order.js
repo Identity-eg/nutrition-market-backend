@@ -1,19 +1,14 @@
-import Order from '../models/order.js';
-import User from '../models/user.js';
-import Product from '../models/product.js';
-
 import { StatusCodes } from 'http-status-codes';
+
+import Order from '../models/order.js';
+import Cart from '../models/cart.js';
+
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
 import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
 
-// const fakeStripeAPI = async ({ amount, currency }) => {
-//   const client_secret = 'someRandomValue';
-//   return { client_secret, amount };
-// };
-
-// CREATE ORDER ################
-export const createOrder = async (req, res) => {
+// CREATE ONLINE ORDER ################
+export const createOnlineOrder = async (req, res) => {
   const user =
     req.body.intention?.extras?.creation_extras?.userId || req.user._id;
   const paymentIntentId = req.body.intention?.id;
@@ -22,6 +17,7 @@ export const createOrder = async (req, res) => {
     req.body.intention?.extras?.creation_extras?.addressId;
   const amount = req.body.intention?.intention_detail?.amount;
   const orderItems = req.body.intention?.extras?.creation_extras?.cartItems;
+  const shippingFee = 0;
 
   if (!req.body.transaction?.success) {
     throw new CustomError.BadRequestError(
@@ -31,9 +27,9 @@ export const createOrder = async (req, res) => {
   const newOrder = {
     user,
     orderItems,
-    total: amount,
     subtotal: amount,
-    shippingFee: 0,
+    total: amount + shippingFee,
+    shippingFee,
     shippingAddress,
     clientSecret,
     paymentIntentId,
@@ -45,14 +41,43 @@ export const createOrder = async (req, res) => {
 
   const order = await Order.create(newOrder);
 
-  res
-    .status(StatusCodes.CREATED)
-    .json({ order, clientSecret: order.clientSecret });
+  res.status(StatusCodes.CREATED).json({ order });
+};
+
+// CREATE CASH ON DELIVERY ORDER
+export const createCashOnDeliveryOrder = async (req, res) => {
+  const { cartId, addressId } = req.body;
+
+  const cart = await Cart.findById(cartId);
+
+  if (!cart) {
+    throw new CustomError.NotFoundError(`No cart with id : ${cartId}`);
+  }
+
+  const shippingFee = 0;
+
+  const newOrder = {
+    user: req.user._id,
+    orderItems: cart.items,
+    shippingAddress: addressId,
+    subtotal: cart.totalPrice,
+    total: cart.totalPrice + shippingFee,
+    shippingFee,
+    paid: false,
+    paymentMethod: {
+      id: 1,
+      name: 'cashOnDelivery',
+    },
+  };
+
+  const order = await Order.create(newOrder);
+
+  res.status(StatusCodes.CREATED).json({ order });
 };
 
 // GET ALL ORDERS ##############
 export const getAllOrders = async (req, res) => {
-  let { name, status, sort, page = 1, limit = 10 } = req.query;
+  let { status, sort, page = 1, limit = 10 } = req.query;
 
   let skip = (Number(page) - 1) * Number(limit);
 

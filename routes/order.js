@@ -9,7 +9,7 @@ const router = Router();
 
 router
   .route('/')
-  .post(orderCont.createOrder)
+  .post(orderCont.createOnlineOrder)
   .get(
     authenticateUser,
     authorizePermissions(USER_ROLES.superAdmin),
@@ -17,7 +17,11 @@ router
   );
 
 router
-  .route('/showAllMyOrders')
+  .route('/cash-on-delivery')
+  .post(authenticateUser, orderCont.createCashOnDeliveryOrder);
+
+router
+  .route('/my-orders')
   .get(authenticateUser, orderCont.getCurrentUserOrders);
 
 router

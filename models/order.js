@@ -52,7 +52,6 @@ const orderSchema = new Schema(
     },
     clientSecret: {
       type: String,
-      // required: true,
     },
     paymentIntentId: {
       type: String,
@@ -67,8 +66,8 @@ const orderSchema = new Schema(
         name: {
           type: String,
           enum: Object.values(PAYMENT_METHODS).map((pm) => pm.name),
-          required: true,
         },
+        required: true,
       },
     },
   },
