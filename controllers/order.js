@@ -71,6 +71,7 @@ export const createCashOnDeliveryOrder = async (req, res) => {
   };
 
   const order = await Order.create(newOrder);
+  await cart.deleteOne();
 
   res.status(StatusCodes.CREATED).json({ order });
 };
