@@ -67,8 +67,8 @@ const orderSchema = new Schema(
           type: String,
           enum: Object.values(PAYMENT_METHODS).map((pm) => pm.name),
         },
-        required: true,
       },
+      required: true,
     },
   },
   {

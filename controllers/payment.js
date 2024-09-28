@@ -36,7 +36,7 @@ export const createPayment = async (req, res) => {
       amount: convertToCent(cart.totalPrice),
       currency: 'EGP',
       // notification_url: 'http://localhost:5000/api/orders',
-      // redirection_url: `http://localhost:5000/api/payment/after-payment?cartId=${cart._id}`,
+      redirection_url: `https://biovac-backend-production.up.railway.app/api/payment/after-payment?cartId=${cart._id}`,
       payment_methods: [+req.body.paymentMethodId],
 
       items: cart.items.map((item) => ({
@@ -133,11 +133,11 @@ export const afterPayment = async (req, res) => {
     .update(concatenateString)
     .digest('hex');
 
-  // await Cart.findByIdAndDelete(cartId);
+  await Cart.findByIdAndDelete(cartId);
 
   if (hash === req.query.hmac) {
     res.cookie('encpl', JSON.stringify({ success, orderId: id }), {
-      maxAge: 1000,
+      maxAge: 1 * 60 * 1000,
     });
     res.redirect(301, `http://localhost:3000/orders/status`);
   }
