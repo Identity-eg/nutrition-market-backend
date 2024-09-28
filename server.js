@@ -48,11 +48,10 @@ app.use(
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     origin: [
-      'https://supplement-food-backend.vercel.app/', // by mistake i create it supplement-food-backend
+      'https://supplement-food-backend.vercel.app', // by mistake i create it supplement-food-backend
       'http://localhost:3000',
       'https://elgendy-e-commerce.vercel.app',
       'http://localhost:5173',
-      'http://localhost:5174',
     ],
   })
 );
