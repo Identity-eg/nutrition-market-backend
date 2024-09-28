@@ -84,6 +84,7 @@ export const afterPayment = async (req, res) => {
   const source_data_sub_type = req.query['source_data.sub_type'];
   const source_data_type = req.query['source_data.type'];
   const cartId = req.query.cartId;
+  console.log({ query: req.query, body: req.body });
 
   const {
     amount_cents,
