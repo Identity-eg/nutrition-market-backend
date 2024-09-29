@@ -133,7 +133,27 @@ export const getSingleOrder = async (req, res) => {
 
 // GET CURRENT USER ORDERS #####
 export const getCurrentUserOrders = async (req, res) => {
-  const orders = await Order.find({ user: req.user._id });
+  let { page = 1, limit = 12, status, period } = req.query;
+  let skip = (Number(page) - 1) * Number(limit);
+
+  let queryObject = {
+    user: req.user._id,
+  };
+
+  if (status) {
+    queryObject.status = status;
+  }
+  
+  if (period) {
+    queryObject.createdAt = { $gte: period };
+  }
+
+  const orders = await Order.find(queryObject)
+    // .sort(sort)
+    .skip(skip)
+    .limit(limit)
+    .populate(['orderItems.variant', 'shippingAddress']);
+
   res.status(StatusCodes.OK).json({ orders, count: orders.length });
 };
 
