@@ -1,10 +1,10 @@
 export const REFRESH_COOKIE_OPTIONS = {
   domian:
     process.env.NODE_ENV === 'production'
-      ? 'supplement-food-backend.vercel.app/'
+      ? 'supplement-food-backend.vercel.app'
       : 'localhost',
   httpOnly: true, //accessible only by web server
-  sameSite: 'Lax',
+  sameSite: 'None',
   secure: process.env.NODE_ENV === 'production',
   maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
 };
