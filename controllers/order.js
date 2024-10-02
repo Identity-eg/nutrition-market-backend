@@ -119,11 +119,8 @@ export const getAllOrders = async (req, res) => {
 export const getSingleOrder = async (req, res) => {
   const { id: orderId } = req.params;
   const order = await Order.findOne({ _id: orderId }).populate([
-    {
-      path: 'orderItems.product',
-      select: 'variants',
-    },
-    { path: 'shippingAddress' },
+    'orderItems.variant',
+    'shippingAddress',
   ]);
   if (!order) {
     throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
