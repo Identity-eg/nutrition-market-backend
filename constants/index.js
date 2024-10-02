@@ -4,7 +4,7 @@ export const REFRESH_COOKIE_OPTIONS = {
       ? 'supplement-food-backend.vercel.app/'
       : 'localhost',
   httpOnly: true, //accessible only by web server
-  sameSite: 'Strict',
+  sameSite: 'Lax',
   secure: process.env.NODE_ENV === 'production',
   maxAge: 1000 * 60 * 60 * 24, //cookie expiry: set to match refresh Token
 };
