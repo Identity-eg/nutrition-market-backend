@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 
 import Order from '../models/order.js';
 import Cart from '../models/cart.js';
+import Product from '../models/product.js';
 
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
@@ -133,7 +134,15 @@ export const getSingleOrder = async (req, res) => {
 
 // GET CURRENT USER ORDERS #####
 export const getCurrentUserOrders = async (req, res) => {
-  let { page = 1, limit = 12, status, period } = req.query;
+  let {
+    page = 1,
+    limit = 12,
+    status,
+    paid,
+    paymentMethod,
+    user,
+    period,
+  } = req.query;
   let skip = (Number(page) - 1) * Number(limit);
 
   let queryObject = {
@@ -142,6 +151,18 @@ export const getCurrentUserOrders = async (req, res) => {
 
   if (status) {
     queryObject.status = status;
+  }
+
+  if (paid) {
+    queryObject.paid = paid;
+  }
+
+  if (paymentMethod) {
+    queryObject['paymentMethod.id'] = paymentMethod;
+  }
+
+  if (user) {
+    queryObject.user = user;
   }
 
   if (period) {
@@ -154,7 +175,7 @@ export const getCurrentUserOrders = async (req, res) => {
     .limit(limit)
     .populate(['orderItems.variant', 'shippingAddress']);
 
-  const ordersCount = await Order.countDocuments(queryObject);
+  const ordersCount = orders.length;
   const lastPage = Math.ceil(ordersCount / limit);
   res.status(StatusCodes.OK).json({
     totalCount: ordersCount,
@@ -166,15 +187,37 @@ export const getCurrentUserOrders = async (req, res) => {
 
 // GET CURRENT USER ORDERS #####
 export const getCompanyOrders = async (req, res) => {
-  let { page = 1, limit = 12, status, period } = req.query;
+  let {
+    page = 1,
+    limit = 12,
+    status,
+    paid,
+    paymentMethod,
+    user,
+    period,
+  } = req.query;
   let skip = (Number(page) - 1) * Number(limit);
 
   let queryObject = {
-    user: req.user._id,
+    'orderItems.product': {
+      $in: await Product.find({ company: req.user.company }).select('_id'),
+    },
   };
 
   if (status) {
     queryObject.status = status;
+  }
+
+  if (paid) {
+    queryObject.paid = paid;
+  }
+
+  if (paymentMethod) {
+    queryObject['paymentMethod.id'] = paymentMethod;
+  }
+
+  if (user) {
+    queryObject.user = user;
   }
 
   if (period) {
@@ -185,9 +228,13 @@ export const getCompanyOrders = async (req, res) => {
     // .sort(sort)
     .skip(skip)
     .limit(limit)
-    .populate(['orderItems.variant', 'shippingAddress']);
+    .populate({
+      path: 'orderItems.product',
+      select: 'company',
+      populate: { path: 'company' },
+    });
 
-  const ordersCount = await Order.countDocuments(queryObject);
+  const ordersCount = orders.length;
   const lastPage = Math.ceil(ordersCount / limit);
   res.status(StatusCodes.OK).json({
     totalCount: ordersCount,

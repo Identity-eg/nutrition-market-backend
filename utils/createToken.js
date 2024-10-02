@@ -1,6 +1,6 @@
 const createTokenUser = (user) => {
   return {
-    name: user.name,
+    fullName: user.fullName,
     email: user.email,
     role: user.role,
     _id: user._id,

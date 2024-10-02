@@ -178,7 +178,7 @@ export const forgotPassword = async (req, res) => {
   const resetToken = user.createResetPasswordToken();
   await user.save();
 
-  const resetUrl = `${process.env.ORIGIN}/reset-password/${resetToken}`;
+  const resetUrl = `${process.env.ORIGIN_FRONTEND}/reset-password/${resetToken}`;
 
   const message = `message`;
 

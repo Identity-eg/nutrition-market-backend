@@ -23,6 +23,13 @@ router
 router
   .route('/my-orders')
   .get(authenticateUser, orderCont.getCurrentUserOrders);
+router
+  .route('/my-company-orders')
+  .get(
+    authenticateUser,
+    authorizePermissions(USER_ROLES.admin),
+    orderCont.getCompanyOrders
+  );
 
 router
   .route('/:id')

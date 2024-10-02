@@ -50,6 +50,9 @@ const orderSchema = new Schema(
       ref: 'Address',
       required: true,
     },
+    deliveryDate: {
+      type: Date,
+    },
     clientSecret: {
       type: String,
     },
