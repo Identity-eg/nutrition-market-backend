@@ -1,4 +1,8 @@
 export const REFRESH_COOKIE_OPTIONS = {
+  domian:
+    process.env.NODE_ENV === 'production'
+      ? 'supplement-food-backend.vercel.app/'
+      : 'localhost',
   httpOnly: true, //accessible only by web server
   sameSite: 'Strict',
   secure: process.env.NODE_ENV === 'production',
