@@ -143,7 +143,7 @@ export const getCurrentUserOrders = async (req, res) => {
   if (status) {
     queryObject.status = status;
   }
-  
+
   if (period) {
     queryObject.createdAt = { $gte: period };
   }
@@ -154,7 +154,47 @@ export const getCurrentUserOrders = async (req, res) => {
     .limit(limit)
     .populate(['orderItems.variant', 'shippingAddress']);
 
-  res.status(StatusCodes.OK).json({ orders, count: orders.length });
+  const ordersCount = await Order.countDocuments(queryObject);
+  const lastPage = Math.ceil(ordersCount / limit);
+  res.status(StatusCodes.OK).json({
+    totalCount: ordersCount,
+    currentPage: Number(page),
+    lastPage,
+    orders,
+  });
+};
+
+// GET CURRENT USER ORDERS #####
+export const getCompanyOrders = async (req, res) => {
+  let { page = 1, limit = 12, status, period } = req.query;
+  let skip = (Number(page) - 1) * Number(limit);
+
+  let queryObject = {
+    user: req.user._id,
+  };
+
+  if (status) {
+    queryObject.status = status;
+  }
+
+  if (period) {
+    queryObject.createdAt = { $gte: period };
+  }
+
+  const orders = await Order.find(queryObject)
+    // .sort(sort)
+    .skip(skip)
+    .limit(limit)
+    .populate(['orderItems.variant', 'shippingAddress']);
+
+  const ordersCount = await Order.countDocuments(queryObject);
+  const lastPage = Math.ceil(ordersCount / limit);
+  res.status(StatusCodes.OK).json({
+    totalCount: ordersCount,
+    currentPage: Number(page),
+    lastPage,
+    orders,
+  });
 };
 
 // UPDATE OREDR #################
