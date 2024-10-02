@@ -157,7 +157,7 @@ export const logout = (req, res) => {
 
   if (!cookies[refreshTokenName])
     return res.status(StatusCodes.NO_CONTENT).json({ message: 'No content' });
-  res.clearCookie(refreshTokenName);
+  res.clearCookie(refreshTokenName, REFRESH_COOKIE_OPTIONS);
   res.json({ message: 'Cookie cleared' });
 };
 
