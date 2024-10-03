@@ -95,7 +95,6 @@ export const login = async (req, res) => {
     expiresIn: '1d',
   });
 
-  // Create secure cookies
   res.cookie(
     comingFromDashboard
       ? process.env.REFRESH_TOKEN_ADMIN_NAME
@@ -116,7 +115,7 @@ export const refresh = async (req, res) => {
     ? process.env.REFRESH_TOKEN_ADMIN_NAME
     : process.env.REFRESH_TOKEN_NAME;
   const cookies = req.cookies;
-  console.log({ cookies: req.cookies, refreshTokenName, comingFromDashboard });
+
   if (!cookies[refreshTokenName])
     throw new CustomError.UnauthenticatedError(
       'Unauthorized you do not have a cookie'

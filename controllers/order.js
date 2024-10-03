@@ -226,9 +226,7 @@ export const getCompanyOrders = async (req, res) => {
     .skip(skip)
     .limit(limit)
     .populate({
-      path: 'orderItems.product',
-      select: 'company',
-      populate: { path: 'company' },
+      path: 'user',
     });
 
   const ordersCount = orders.length;
