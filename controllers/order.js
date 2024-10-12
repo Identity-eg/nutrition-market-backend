@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import Order from '../models/order.js';
 import Cart from '../models/cart.js';
 import Product from '../models/product.js';
+import User from '../models/user.js';
 
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
@@ -79,21 +80,57 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 
 // GET ALL ORDERS ##############
 export const getAllOrders = async (req, res) => {
-  let { status, sort, page = 1, limit = 10 } = req.query;
+  let {
+    name,
+    status,
+    company,
+    paid,
+    paymentMethod,
+    period,
+    sort,
+    page = 1,
+    limit = 10,
+  } = req.query;
 
   let skip = (Number(page) - 1) * Number(limit);
 
   let queryObject = {};
 
-  // Status
+  if (name) {
+    const nameQuery = { $regex: name, $options: 'i' };
+    const users = await User.find({
+      $or: [
+        { firstName: nameQuery },
+        { lastName: nameQuery },
+        { email: nameQuery },
+      ],
+    });
+
+    const userIds = users.map((user) => user?._id) ?? [];
+    queryObject.user = { $in: userIds };
+  }
+
   if (status) {
     queryObject.status = { $in: status };
   }
 
-  // Pagination & Sort
-  delete queryObject.page;
-  delete queryObject.limit;
-  delete queryObject.sort;
+  if (company) {
+    queryObject['orderItems.product'] = {
+      $in: await Product.find({ company }).select('_id'),
+    };
+  }
+
+  if (paid) {
+    queryObject.paid = paid;
+  }
+
+  if (paymentMethod) {
+    queryObject['paymentMethod.name'] = paymentMethod;
+  }
+
+  if (period) {
+    queryObject.createdAt = { $gte: period };
+  }
 
   const orders = await Order.find(queryObject)
     .populate({
@@ -105,7 +142,7 @@ export const getAllOrders = async (req, res) => {
     .skip(skip)
     .limit(limit);
 
-  const ordersCount = await Order.countDocuments(queryObject);
+  const ordersCount = orders.length;
   const lastPage = Math.ceil(ordersCount / limit);
   res.status(StatusCodes.OK).json({
     totalCount: ordersCount,
@@ -155,7 +192,7 @@ export const getCurrentUserOrders = async (req, res) => {
   }
 
   if (paymentMethod) {
-    queryObject['paymentMethod.id'] = paymentMethod;
+    queryObject['paymentMethod.name'] = paymentMethod;
   }
 
   if (user) {
@@ -190,7 +227,7 @@ export const getCompanyOrders = async (req, res) => {
     status,
     paid,
     paymentMethod,
-    user,
+    name,
     period,
   } = req.query;
   let skip = (Number(page) - 1) * Number(limit);
@@ -201,6 +238,20 @@ export const getCompanyOrders = async (req, res) => {
     },
   };
 
+  if (name) {
+    const nameQuery = { $regex: name, $options: 'i' };
+    const users = await User.find({
+      $or: [
+        { firstName: nameQuery },
+        { lastName: nameQuery },
+        { email: nameQuery },
+      ],
+    });
+
+    const userIds = users.map((user) => user?._id) ?? [];
+    queryObject.user = { $in: userIds };
+  }
+
   if (status) {
     queryObject.status = status;
   }
@@ -210,11 +261,7 @@ export const getCompanyOrders = async (req, res) => {
   }
 
   if (paymentMethod) {
-    queryObject['paymentMethod.id'] = paymentMethod;
-  }
-
-  if (user) {
-    queryObject.user = user;
+    queryObject['paymentMethod.name'] = paymentMethod;
   }
 
   if (period) {
