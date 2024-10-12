@@ -30,8 +30,10 @@ export const getAllProducts = async (req, res) => {
 
   if (name) {
     const nameQuery = { $regex: name, $options: 'i' };
+    const variants = await Variant.find({ name: nameQuery });
+    const variantIDs = variants.map((variant) => variant?._id) ?? [];
     queryObject['$or'] = [
-      { 'variants.name': nameQuery },
+      { variants: { $in: variantIDs } },
       { 'nutritionFacts.ingredients.name': nameQuery },
       { 'nutritionFacts.otherIngredients.name': nameQuery },
     ];
