@@ -212,11 +212,16 @@ export const getSimilarProducts = async (req, res) => {
     // subCategory: { $ne: product.subCategory._id },
   })
     .limit(limit)
-    .populate({
-      path: 'category company dosageForm',
-      select: 'name slug',
-      options: { _recursed: true },
-    });
+    .populate([
+      {
+        path: 'variants',
+      },
+      {
+        path: 'category company dosageForm',
+        select: 'name slug',
+        options: { _recursed: true },
+      },
+    ]);
 
   return res.json({
     // products: [...productsBySub, ...productsByCategory],
