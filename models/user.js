@@ -29,6 +29,17 @@ const userSchema = new Schema(
       lowercase: true,
       validate: [isEmail, 'Please provide a valid email'],
     },
+    mobileNumber: {
+      type: String,
+      minlength: [
+        11,
+        'Please provide a valid mobile number starts with 01 and eleven number',
+      ],
+      maxlength: [
+        11,
+        'Please provide a valid mobile number starts with 01 and eleven number',
+      ],
+    },
     password: {
       type: String,
       required: [true, 'Please provide a password'],
@@ -39,6 +50,7 @@ const userSchema = new Schema(
       enum: Object.values(USER_ROLES),
       default: USER_ROLES.user,
     },
+    photo: String,
     company: {
       type: ObjectId,
       ref: 'Company',
