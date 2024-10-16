@@ -12,6 +12,10 @@ const companySchema = new Schema({
     unique: true,
     required: true,
   },
+  description: String,
+  logo: String,
+  cover: String,
+  ordersCount: { type: Number, default: 0 },
   productsCount: { type: Number, default: 0 },
 });
 

@@ -50,7 +50,6 @@ const userSchema = new Schema(
       enum: Object.values(USER_ROLES),
       default: USER_ROLES.user,
     },
-    photo: String,
     company: {
       type: ObjectId,
       ref: 'Company',

@@ -19,7 +19,7 @@ router
   .get(controllers.getSingleCompany)
   .patch(
     authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
+    authorizePermissions(USER_ROLES.superAdmin, USER_ROLES.admin),
     controllers.updateCompany
   )
   .delete(

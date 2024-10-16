@@ -2,6 +2,7 @@ import Company from '../models/company.js';
 import { StatusCodes } from 'http-status-codes';
 import CustomError from '../errors/index.js';
 import slugify from 'slugify';
+import { USER_ROLES } from '../constants/index.js';
 
 // ################# Create Company #################
 export const createCompany = async (req, res) => {
@@ -24,7 +25,7 @@ export const getSingleCompany = async (req, res) => {
   const company = await Company.findOne({ _id: companyId });
 
   if (!company) {
-    throw new CustomError.NotFoundError(`No product with id : ${companyId}`);
+    throw new CustomError.NotFoundError(`No company with id : ${companyId}`);
   }
 
   res.status(StatusCodes.OK).json({ company });
@@ -34,6 +35,14 @@ export const getSingleCompany = async (req, res) => {
 export const updateCompany = async (req, res) => {
   const { id: companyId } = req.params;
 
+  if (
+    req.user.role !== USER_ROLES.superAdmin &&
+    req.user.company !== companyId
+  ) {
+    throw new CustomError.UnauthorizedError(
+      'Unauthorized to access this route'
+    );
+  }
   if (req.body.name) {
     req.body.slug = slugify(req.body.name, { lower: true });
   }
