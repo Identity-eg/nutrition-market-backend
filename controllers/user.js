@@ -5,28 +5,22 @@ import { checkPermissions } from '../utils/index.js';
 import chechPermissions from '../utils/checkPermissions.js';
 
 export const getAllUsers = async (req, res) => {
-  let { name, blocked, page = 1, limit = 10 } = req.query;
+  let { name, role, blocked, page = 1, limit = 10 } = req.query;
 
   let skip = (Number(page) - 1) * Number(limit);
-  let queryObject = { role: 'user', ...req.query };
+  let queryObject = {};
 
-  // Name
-  if (queryObject.name) {
+  if (name) {
     queryObject.name = { $regex: name, $options: 'i' };
   }
-  // Blocked
-  if (queryObject.blocked) {
-    const arrOfBoolean = Array.isArray(blocked)
-      ? blocked.map((b) => (b === 'blocked' ? true : false))
-      : blocked === 'blocked'
-        ? true
-        : false;
-    queryObject.blocked = { $in: arrOfBoolean };
+
+  if (role) {
+    queryObject.role = role;
   }
 
-  // Pagination
-  delete queryObject.page;
-  delete queryObject.limit;
+  if (blocked !== undefined) {
+    queryObject.blocked = blocked;
+  }
 
   const users = await User.find(queryObject)
     .skip(skip)
