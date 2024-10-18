@@ -272,7 +272,7 @@ export const getSimilarProducts = async (req, res) => {
       },
     },
     {
-      $limit: limit, // Limit to a maximum of 4 products
+      $limit: +limit, // Limit to a maximum of 4 products
     },
     {
       $replaceRoot: { newRoot: '$product' }, // Replace root with the product document
@@ -306,8 +306,8 @@ export const getSimilarProducts = async (req, res) => {
   //     options: { _recursed: true },
   //   });
 
-  return res.json({
+  return res.json(
     // products: [...productsBySub, ...productsByCategory],
-    products: similarProducts,
-  });
+    similarProducts
+  );
 };
