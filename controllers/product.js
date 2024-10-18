@@ -306,8 +306,8 @@ export const getSimilarProducts = async (req, res) => {
   //     options: { _recursed: true },
   //   });
 
-  return res.json(
+  return res.json({
     // products: [...productsBySub, ...productsByCategory],
-    similarProducts
-  );
+    products: similarProducts,
+  });
 };
