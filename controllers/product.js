@@ -35,7 +35,6 @@ export const getAllProducts = async (req, res) => {
     queryObject['$or'] = [
       { variants: { $in: variantIDs } },
       { 'nutritionFacts.ingredients.name': nameQuery },
-      { 'nutritionFacts.otherIngredients.name': nameQuery },
     ];
   }
 
@@ -190,14 +189,116 @@ export const deleteProduct = async (req, res) => {
 // ###########################################
 
 export const getSimilarProducts = async (req, res) => {
-  let { limit = 3 } = req.query;
+  let { limit = 5 } = req.query;
   const { id } = req.params;
   const product = await Product.findById(id);
+  const ingNames = product.nutritionFacts.ingredients.map(
+    (ingredient) => ingredient.name
+  );
+
+  const similarProducts = await Product.aggregate([
+    {
+      $facet: {
+        // Match products with the same ingredients
+        ingredientMatches: [
+          {
+            $match: {
+              ['nutritionFacts.ingredients']: {
+                $elemMatch: {
+                  name: {
+                    $in: ingNames.map((name) => new RegExp(name, 'i')),
+                  },
+                },
+              },
+              _id: { $ne: product._id },
+            },
+          },
+          {
+            $group: {
+              _id: '$_id',
+              product: { $first: '$$ROOT' },
+            },
+          },
+        ],
+        // Match products in the same category
+        categoryMatches: [
+          {
+            $match: {
+              category: { $in: product.category },
+              _id: { $ne: product._id },
+            },
+          },
+          {
+            $group: {
+              _id: '$_id',
+              product: { $first: '$$ROOT' },
+            },
+          },
+        ],
+        dosageMatches: [
+          {
+            $match: {
+              dosageForm: product.dosageForm,
+              _id: { $ne: product._id },
+            },
+          },
+          {
+            $group: {
+              _id: '$_id',
+              product: { $first: '$$ROOT' },
+            },
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        combinedResults: {
+          $concatArrays: [
+            '$ingredientMatches',
+            '$categoryMatches',
+            '$dosageMatches',
+          ],
+        },
+      },
+    },
+    {
+      $unwind: '$combinedResults',
+    },
+    {
+      $group: {
+        _id: '$combinedResults._id',
+        product: { $first: '$combinedResults.product' },
+      },
+    },
+    {
+      $limit: limit, // Limit to a maximum of 4 products
+    },
+    {
+      $replaceRoot: { newRoot: '$product' }, // Replace root with the product document
+    },
+  ]);
+
+  // const productsByIngredients = await Product.find({
+  //   _id: { $ne: product._id },
+  //   'nutritionFacts.ingredients': {
+  //     $elemMatch: {
+  //       name: {
+  //         $in: ingNames.map((name) => new RegExp(name, 'i')),
+  //       },
+  //     },
+  //   },
+  // });
+
+  // const productsByCategories = await Product.find({
+  //   subCategory: product.category._id,
+  // });
+  // let similarProduct = [...product, .prgsugds, osidis];
 
   // const productsBySub = await Product.find({
-  //   subCategory: product.subCategory._id,
+  //   subCategory: product.category._id,
   //   _id: { $ne: id },
-  // })
+  // });
   //   .limit(limit)
   //   .populate({
   //     path: 'category company dosageForm',
@@ -205,31 +306,8 @@ export const getSimilarProducts = async (req, res) => {
   //     options: { _recursed: true },
   //   });
 
-  // if (productsBySub.length < limit) {
-  const productsByCategory = await Product.find({
-    category: { $elemMatch: { $in: product.category } },
-    _id: { $ne: id },
-    // subCategory: { $ne: product.subCategory._id },
-  })
-    .limit(limit)
-    .populate([
-      {
-        path: 'variants',
-      },
-      {
-        path: 'category company dosageForm',
-        select: 'name slug',
-        options: { _recursed: true },
-      },
-    ]);
-
   return res.json({
     // products: [...productsBySub, ...productsByCategory],
-    products: [...productsByCategory],
+    products: similarProducts,
   });
-  // }
-
-  // res.json({
-  //   products: productsBySub,
-  // });
 };
