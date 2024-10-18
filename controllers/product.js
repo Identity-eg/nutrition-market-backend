@@ -262,9 +262,11 @@ export const getSimilarProducts = async (req, res) => {
         },
       },
     },
+
     {
       $unwind: '$combinedResults',
     },
+
     {
       $group: {
         _id: '$combinedResults._id',
@@ -276,6 +278,14 @@ export const getSimilarProducts = async (req, res) => {
     },
     {
       $replaceRoot: { newRoot: '$product' }, // Replace root with the product document
+    },
+    {
+      $lookup: {
+        from: 'variants', // Replace with your actual collection name
+        localField: 'variants', // Assuming there's a brand field
+        foreignField: '_id',
+        as: 'variants',
+      },
     },
   ]);
 
@@ -307,7 +317,6 @@ export const getSimilarProducts = async (req, res) => {
   //   });
 
   return res.json({
-    // products: [...productsBySub, ...productsByCategory],
     products: similarProducts,
   });
 };
