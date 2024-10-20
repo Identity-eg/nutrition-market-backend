@@ -5,6 +5,7 @@ import Review from '../models/review.js';
 import CustomError from '../errors/index.js';
 import { USER_ROLES } from '../constants/index.js';
 import Variant from '../models/variant.js';
+import { getIncludes } from './cart.js';
 
 export const createProduct = async (req, res) => {
   const product = await Product.create(req.body);
@@ -24,6 +25,7 @@ export const getAllProducts = async (req, res) => {
     category,
     dosageForm,
   } = req.query;
+  const includes = getIncludes(req);
 
   let skip = (Number(page) - 1) * Number(limit);
   let queryObject = {};
@@ -70,14 +72,7 @@ export const getAllProducts = async (req, res) => {
     .sort(sort)
     .skip(skip)
     .limit(limit)
-    .populate([
-      {
-        path: 'category company dosageForm',
-        select: 'name slug',
-        options: { _recursed: true },
-      },
-      { path: 'variants' },
-    ]);
+    .populate(includes);
 
   const productsCount = await Product.countDocuments(queryObject);
   const lastPage = Math.ceil(productsCount / limit);
@@ -288,33 +283,6 @@ export const getSimilarProducts = async (req, res) => {
       },
     },
   ]);
-
-  // const productsByIngredients = await Product.find({
-  //   _id: { $ne: product._id },
-  //   'nutritionFacts.ingredients': {
-  //     $elemMatch: {
-  //       name: {
-  //         $in: ingNames.map((name) => new RegExp(name, 'i')),
-  //       },
-  //     },
-  //   },
-  // });
-
-  // const productsByCategories = await Product.find({
-  //   subCategory: product.category._id,
-  // });
-  // let similarProduct = [...product, .prgsugds, osidis];
-
-  // const productsBySub = await Product.find({
-  //   subCategory: product.category._id,
-  //   _id: { $ne: id },
-  // });
-  //   .limit(limit)
-  //   .populate({
-  //     path: 'category company dosageForm',
-  //     select: 'name slug',
-  //     options: { _recursed: true },
-  //   });
 
   return res.json({
     products: similarProducts,

@@ -5,8 +5,21 @@ import CustomError from '../errors/index.js';
 import { getCredFromCookies } from '../utils/index.js';
 import Variant from '../models/variant.js';
 
+export const getIncludes = (req) => {
+  const map = Object.entries(req.query.includes ?? []).map(([key, values]) => {
+    const select = values.join(' ');
+    return {
+      path: key,
+      ...(select && { select }),
+    };
+  });
+
+  return map;
+};
+
 // ################# Get Cart #################
 export const getCart = async (req, res) => {
+  // const includes = getIncludes(req);
   const { user, cartId } = getCredFromCookies(req);
 
   const cart = await Cart.findOne({
@@ -14,9 +27,7 @@ export const getCart = async (req, res) => {
       { $and: [{ user: { $exists: true } }, { user: user?._id }] },
       { $and: [{ user: { $exists: false } }, { _id: cartId }] },
     ],
-  }).populate({
-    path: 'items.variant',
-  });
+  }).populate({ path: 'items.variant' });
 
   if (!cart) {
     return res.status(StatusCodes.OK).json({
