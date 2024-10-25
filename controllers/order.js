@@ -4,10 +4,14 @@ import Order from '../models/order.js';
 import Cart from '../models/cart.js';
 import Product from '../models/product.js';
 import User from '../models/user.js';
+import Variant from '../models/variant.js';
 
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
 import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
+import { USER_ROLES } from '../constants/index.js';
+import mongoose from 'mongoose';
+import Company from '../models/company.js';
 
 // CREATE ONLINE ORDER ################
 export const createOnlineOrder = async (req, res) => {
@@ -26,6 +30,16 @@ export const createOnlineOrder = async (req, res) => {
       'Something went wrong while creating your order'
     );
   }
+
+  for (const item of orderItems.items) {
+    const variant = await Variant.findById(item.variant);
+    const isExceedQuantity = variant?.quantity < (item.amount ?? 0);
+    if (isExceedQuantity)
+      throw new CustomError.BadRequestError(
+        'The requested quantity is not available, it seems to be sold!!, try to reduce your requested quantity'
+      );
+  }
+
   const newOrder = {
     user,
     orderItems,
@@ -41,12 +55,40 @@ export const createOnlineOrder = async (req, res) => {
       PAYMENT_METHODS.cashOnDelivery,
   };
 
-  const order = await Order.create(newOrder);
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const order = await Order.create(newOrder, { session });
+    for (const item of orderItems) {
+      const product = await Product.findById(item.product, { session });
+      const company = await Company.findById(product.company, { session });
+      company.ordersCount += item.amount;
+      await company.save({ session });
 
-  res.status(StatusCodes.CREATED).json({ order });
+      await Variant.findByIdAndUpdate(
+        item.variant,
+        {
+          $inc: { sold: item.amount, quantity: -item.amount },
+        },
+        { session }
+      );
+    }
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $inc: { ordersCount: 1 } },
+      { session }
+    );
+    await session.commitTransaction();
+    res.status(StatusCodes.CREATED).json({ order });
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError.BadRequestError('s');
+  } finally {
+    session.endSession();
+  }
 };
 
-// CREATE CASH ON DELIVERY ORDER
+// CREATE CASH ON DELIVERY ORDER #########################
 export const createCashOnDeliveryOrder = async (req, res) => {
   const { cartId, addressId } = req.body;
 
@@ -54,6 +96,15 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 
   if (!cart) {
     throw new CustomError.NotFoundError(`No cart with id : ${cartId}`);
+  }
+
+  for (const item of cart.items) {
+    const variant = await Variant.findById(item.variant);
+    const isExceedQuantity = variant?.quantity < (item.amount ?? 0);
+    if (isExceedQuantity)
+      throw new CustomError.BadRequestError(
+        'The requested quantity is not available, it seems to be sold!!, try to reduce your requested quantity'
+      );
   }
 
   const shippingFee = 0;
@@ -72,10 +123,32 @@ export const createCashOnDeliveryOrder = async (req, res) => {
     },
   };
 
-  const order = await Order.create(newOrder);
-  await cart.deleteOne();
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const order = await Order.create([newOrder], { session });
+    for (const item of cart.items) {
+      const product = await Product.findById(item.product);
+      const company = await Company.findById(product.company);
+      company.ordersCount += item.amount;
+      await company.save({ session });
 
-  res.status(StatusCodes.CREATED).json({ order });
+      await Variant.findByIdAndUpdate(item.variant, {
+        $inc: { sold: item.amount, quantity: -item.amount },
+      }).session(session);
+    }
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { ordersCount: 1 },
+    }).session(session);
+    await cart.deleteOne().session(session);
+    await session.commitTransaction();
+    res.status(StatusCodes.CREATED).json({ order });
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError.BadRequestError(error);
+  } finally {
+    await session.endSession();
+  }
 };
 
 // GET ALL ORDERS ##############
@@ -158,11 +231,26 @@ export const getSingleOrder = async (req, res) => {
   const order = await Order.findOne({ _id: orderId }).populate([
     'orderItems.variant',
     'shippingAddress',
+    { path: 'orderItems.product', select: 'company dosageForm category' },
   ]);
   if (!order) {
     throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
   }
-  checkPermissions(req.user, order.user);
+
+  const superAdmin = req.user.role === USER_ROLES.superAdmin;
+  const adminOwner =
+    req.user.role === USER_ROLES.admin &&
+    order.orderItems.some(
+      (item) => item.product.company.toString() === req.user.company
+    );
+  const userOwner = req.user._id === order.user.toString();
+
+  if (!superAdmin && !adminOwner && !userOwner) {
+    throw new CustomError.UnauthorizedError(
+      'Not authorized to access this route'
+    );
+  }
+
   res.status(StatusCodes.OK).json({ order });
 };
 
@@ -302,4 +390,42 @@ export const updateOrder = async (req, res) => {
   await order.save();
 
   res.status(StatusCodes.OK).json({ order });
+};
+
+export const cancelOrder = async (req, res) => {
+  const { id: orderId } = req.params;
+
+  const order = await Order.findOne({ _id: orderId });
+  if (!order) {
+    throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
+  }
+  checkPermissions(req.user, order.user);
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    for (const item of order.orderItems) {
+      const product = await Product.findById(item.product);
+      const company = await Company.findById(product.company);
+      company.ordersCount -= item.amount;
+      await company.save({ session });
+
+      await Variant.findByIdAndUpdate(item.variant, {
+        $inc: { sold: -item.amount, quantity: item.amount },
+      }).session(session);
+    }
+
+    await User.findByIdAndUpdate(order.user, {
+      $inc: { ordersCount: -1 },
+    }).session(session);
+
+    await order.deleteOne().session(session);
+    await session.commitTransaction();
+    res.status(StatusCodes.OK).json({ msg: 'Order cancelled successfully' });
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError.BadRequestError(error);
+  } finally {
+    await session.endSession();
+  }
 };

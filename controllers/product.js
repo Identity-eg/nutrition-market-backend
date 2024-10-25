@@ -1,11 +1,9 @@
 import { StatusCodes } from 'http-status-codes';
-
 import Product from '../models/product.js';
 import Review from '../models/review.js';
 import CustomError from '../errors/index.js';
 import { USER_ROLES } from '../constants/index.js';
 import Variant from '../models/variant.js';
-import { getIncludes } from './cart.js';
 
 export const createProduct = async (req, res) => {
   const product = await Product.create(req.body);
@@ -25,7 +23,6 @@ export const getAllProducts = async (req, res) => {
     category,
     dosageForm,
   } = req.query;
-  const includes = getIncludes(req);
 
   let skip = (Number(page) - 1) * Number(limit);
   let queryObject = {};
@@ -72,7 +69,10 @@ export const getAllProducts = async (req, res) => {
     .sort(sort)
     .skip(skip)
     .limit(limit)
-    .populate(includes);
+    .populate([
+      { path: 'variants' },
+      { path: 'category company dosageForm', select: 'name' },
+    ]);
 
   const productsCount = await Product.countDocuments(queryObject);
   const lastPage = Math.ceil(productsCount / limit);
@@ -108,7 +108,6 @@ export const getSingleProduct = async (req, res) => {
 };
 
 // ######################################################
-
 // if you decide to not use virtual
 export const getSingleProductReviews = async (req, res) => {
   const { id: productId } = req.params;
