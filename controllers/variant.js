@@ -1,6 +1,8 @@
 import { StatusCodes } from 'http-status-codes';
 import Variant from '../models/variant.js';
 import CustomError from '../errors/index.js';
+import Cart from '../models/cart.js';
+import mongoose from 'mongoose';
 
 export const createVariant = async (req, res) => {
   const variant = await Variant.create({
@@ -41,10 +43,51 @@ export const updateVariant = async (req, res) => {
 };
 
 export const deleteVariant = async (req, res) => {
-  const variant = await Variant.findByIdAndDelete(req.params.variantId);
+  const variantId = req.params.variantId;
+  const variant = await Variant.findById(variantId);
 
   if (!variant) {
     throw new CustomError.BadRequestError('No variant found with this id');
   }
-  res.status(StatusCodes.CREATED).json({ msg: 'Variant deleted successfuly' });
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    await variant.deleteOne({ session });
+
+    const cartIDs = await Cart.find({
+      'items.variant': variantId,
+    }).select('_id');
+
+    await Promise.all(
+      cartIDs.map(async (id) => {
+        const cart = await Cart.findById(id);
+        const deletedItem = cart.items.find(
+          (item) => item.variant.toString() === variantId.toString()
+        );
+
+        cart.items = cart.items.filter(
+          (item) => item.variant.toString() !== variantId.toString()
+        );
+        cart.totalItems -= deletedItem.amount;
+        cart.totalPrice -= deletedItem.totalProductPrice;
+
+        if (cart.totalItems === 0) {
+          return cart.deleteOne({ session });
+        } else {
+          return cart.save({ session });
+        }
+      })
+    );
+    await session.commitTransaction();
+    res
+      .status(StatusCodes.CREATED)
+      .json({ msg: 'Variant deleted successfuly' });
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError.CustomAPIError(error.message);
+  } finally {
+    await session.endSession();
+  }
 };

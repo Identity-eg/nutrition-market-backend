@@ -31,6 +31,12 @@ import notFoundMiddleware from './middlewares/not-found.js';
 import errorHandlerMiddleware from './middlewares/error-handler.js';
 import { getGovernorateCities, getGovernorates } from './controllers/egypt.js';
 
+process.on('uncaughtException', (err) => {
+  console.log(err.name, err.message);
+  console.log('UNCAUGHT EXCEPTION! shutting down...');
+  process.exit(1);
+});
+
 dotenv.config();
 connectDb();
 
@@ -50,7 +56,6 @@ app.use(
     origin: [
       'https://supplement-food-backend.vercel.app', // by mistake i create it supplement-food-backend
       'http://localhost:3000',
-      'https://elgendy-e-commerce.vercel.app',
       'http://localhost:5173',
     ],
   })
@@ -82,23 +87,13 @@ app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 5000;
-// (async function () {
-//   console.log('Initializing Ngrok tunnel...');
 
-//   // Initialize ngrok using auth token and hostname
-//   const url = await ngrok.connect({
-//     proto: 'http',
-//     // Your authtoken if you want your hostname to be the same everytime
-//     authtoken: '',
-//     // Your hostname if you want your hostname to be the same everytime
-//     hostname: '',
-//     // Your app port
-//     addr: port,
-//   });
-
-//   console.log(`Listening on url ${url}`);
-//   console.log('Ngrok tunnel initialized!');
-// })();
-app.listen(port, async () => {
+const server = app.listen(port, async () => {
   console.log(`server running on port ${port}`);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.log(err.name, err.message);
+  console.log('UNHANDLED REJECTION! shutting down...');
+  server.close(() => process.exit(1));
 });

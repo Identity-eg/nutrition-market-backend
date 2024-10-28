@@ -94,7 +94,6 @@ userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// Fire a function before doc saved to db
 userSchema.pre('save', async function (next) {
   // console.log('this.modifiedPaths()', this.modifiedPaths());
   if (!this.isModified('password')) return next();

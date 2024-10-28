@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "start:prod": "NODE_ENV=production nodemon server.js",
+    "server": "nodemon server.js",
+    "debug": "ndb server.js"
   },
   "lint-staged": {
     "**/*": [
@@ -57,6 +59,7 @@
     "globals": "^15.7.0",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.7",
+    "ndb": "^1.1.5",
     "nodemon": "^3.1.0",
     "prettier": "3.3.2"
   }

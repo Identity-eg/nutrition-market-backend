@@ -1,13 +1,57 @@
+import mongoose from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
+
 import Product from '../models/product.js';
 import Review from '../models/review.js';
+import Variant from '../models/variant.js';
+import Company from '../models/company.js';
+import DosageForm from '../models/dosageForm.js';
+import Category from '../models/category.js';
+import Cart from '../models/cart.js';
+
 import CustomError from '../errors/index.js';
 import { USER_ROLES } from '../constants/index.js';
-import Variant from '../models/variant.js';
 
 export const createProduct = async (req, res) => {
-  const product = await Product.create(req.body);
-  res.status(StatusCodes.CREATED).json({ product });
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const product = await Product.create([req.body], { session });
+
+    await Company.findByIdAndUpdate(
+      req.body.company,
+      {
+        $inc: { productsCount: 1 },
+      },
+      { session }
+    );
+
+    await DosageForm.findByIdAndUpdate(
+      req.body.dosageForm,
+      {
+        $inc: { productsCount: 1 },
+      },
+      { session }
+    );
+
+    req.body.category.forEach(
+      async function (cat) {
+        await Category.findByIdAndUpdate(cat, {
+          $inc: { productsCount: 1 },
+        });
+      },
+      { session }
+    );
+
+    await session.commitTransaction();
+    res.status(StatusCodes.CREATED).json({ product });
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError.CustomAPIError(error.message);
+  } finally {
+    await session.endSession();
+  }
 };
 
 // #################### Get All Products ######################
@@ -140,16 +184,38 @@ export const updateProduct = async (req, res) => {
     );
   }
 
-  const updatedProduct = await Product.findOneAndUpdate(
-    { _id: productId },
-    req.body,
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  res.status(StatusCodes.OK).json({ product: updatedProduct });
+  try {
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId },
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+        session,
+      }
+    );
+
+    if (req.body.category) {
+      await Product.countByCategory({ session });
+    }
+    if (req.body.company) {
+      await Product.countByCompany({ session });
+    }
+    if (req.body.dosageForm) {
+      await Product.countByDosageForm({ session });
+    }
+
+    await session.commitTransaction();
+    res.status(StatusCodes.OK).json({ product: updatedProduct });
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError.CustomAPIError(error.message);
+  } finally {
+    await session.endSession();
+  }
 };
 
 // ######################################################
@@ -172,12 +238,79 @@ export const deleteProduct = async (req, res) => {
     );
   }
 
-  await product.deleteOne();
-  product.variants.map(async (variant) => {
-    await Variant.findByIdAndDelete(variant);
-  });
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
 
-  res.status(StatusCodes.OK).json({ msg: 'Success! Product removed.' });
+    await product.deleteOne({ session });
+
+    await Promise.all(
+      product.variants.map((item) =>
+        Variant.findByIdAndDelete(item, { session })
+      )
+    );
+
+    await Review.deleteMany({ product: productId }, { session });
+    const cartIDs = await Cart.find({ 'items.product': productId }).select(
+      '_id'
+    );
+
+    await Promise.all(
+      cartIDs.map(async (id) => {
+        const cart = await Cart.findById(id);
+        const deletedItem = cart.items.find(
+          (item) => item.product.toString() === productId.toString()
+        );
+
+        cart.items = cart.items.filter(
+          (item) => item.product.toString() !== productId.toString()
+        );
+        cart.totalItems -= deletedItem.amount;
+        cart.totalPrice -= deletedItem.totalProductPrice;
+
+        if (cart.totalItems === 0) {
+          return cart.deleteOne({ session });
+        } else {
+          return cart.save({ session });
+        }
+      })
+    );
+
+    await Company.findByIdAndUpdate(
+      product.company,
+      {
+        $inc: { productsCount: -1 },
+      },
+      { session }
+    );
+
+    await DosageForm.findByIdAndUpdate(
+      product.dosageForm,
+      {
+        $inc: { productsCount: -1 },
+      },
+      { session }
+    );
+
+    await Promise.all(
+      product.category.map((cat) =>
+        Category.findByIdAndUpdate(
+          cat,
+          {
+            $inc: { productsCount: -1 },
+          },
+          { session }
+        )
+      )
+    );
+    await session.commitTransaction();
+    res.status(StatusCodes.OK).json({ msg: 'Success! Product removed.' });
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError.CustomAPIError(error.message);
+  } finally {
+    await session.endSession();
+  }
 };
 
 // ###########################################

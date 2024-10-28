@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import CustomError from '../errors/index.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -43,6 +44,7 @@ const reviewSchema = new Schema(
             },
           },
         ]);
+        console.log('review aggregation result', result);
 
         try {
           await this.model('Product').findOneAndUpdate(
@@ -53,7 +55,7 @@ const reviewSchema = new Schema(
             }
           );
         } catch (error) {
-          console.log(error);
+          throw new CustomError.BadRequestError(error.message);
         }
       },
     },

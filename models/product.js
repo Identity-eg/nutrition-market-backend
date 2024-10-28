@@ -2,9 +2,6 @@ import mongoose from 'mongoose';
 import Company from './company.js';
 import DosageForm from './dosageForm.js';
 import Category from './category.js';
-import Review from './review.js';
-import Cart from './cart.js';
-import CustomAPIError from '../errors/custom-api.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -92,7 +89,7 @@ const productSchema = new Schema(
     // toJSON: { virtuals: true },
     // toObject: { virtuals: true },
     statics: {
-      countByCategory: async function () {
+      countByCategory: async function ({ session }) {
         const result = await this.aggregate([
           { $unwind: '$category' },
           {
@@ -101,30 +98,29 @@ const productSchema = new Schema(
               count: { $sum: 1 },
             },
           },
-        ]);
+        ]).session(session);
 
-        try {
-          result.forEach(async (cat) => {
+        await Promise.all(
+          result.map(async (cat) => {
             const category = await Category.findById(cat._id);
             category.productsCount = cat?.count ?? 0;
-            await category.save();
-          });
+            return category.save({ session });
+          })
+        );
 
-          await Category.updateMany(
-            { _id: { $nin: result.map((r) => r._id) } },
-            [
-              {
-                $set: {
-                  productsCount: 0,
-                },
+        await Category.updateMany(
+          { _id: { $nin: result.map((r) => r._id) } },
+          [
+            {
+              $set: {
+                productsCount: 0,
               },
-            ]
-          );
-        } catch (error) {
-          throw new CustomAPIError.BadRequestError(error);
-        }
+            },
+          ],
+          { session }
+        );
       },
-      countByCompany: async function () {
+      countByCompany: async function ({ session }) {
         const result = await this.aggregate([
           {
             $group: {
@@ -132,30 +128,29 @@ const productSchema = new Schema(
               count: { $sum: 1 },
             },
           },
-        ]);
+        ]).session(session);
 
-        try {
-          result.forEach(async (com) => {
+        await Promise.all(
+          result.map(async (com) => {
             const company = await Company.findById(com._id);
             company.productsCount = com?.count ?? 0;
-            await company.save();
-          });
+            await company.save({ session });
+          })
+        );
 
-          await Company.updateMany(
-            { _id: { $nin: result.map((r) => r._id) } },
-            [
-              {
-                $set: {
-                  productsCount: 0,
-                },
+        await Company.updateMany(
+          { _id: { $nin: result.map((r) => r._id) } },
+          [
+            {
+              $set: {
+                productsCount: 0,
               },
-            ]
-          );
-        } catch (error) {
-          throw new CustomAPIError.BadRequestError(error);
-        }
+            },
+          ],
+          { session }
+        );
       },
-      countByDosageForm: async function () {
+      countByDosageForm: async function ({ session }) {
         const result = await this.aggregate([
           {
             $group: {
@@ -163,28 +158,27 @@ const productSchema = new Schema(
               count: { $sum: 1 },
             },
           },
-        ]);
+        ]).session(session);
 
-        try {
-          result.forEach(async (form) => {
+        await Promise.all(
+          result.map(async (form) => {
             const dosageForm = await DosageForm.findById(form._id);
             dosageForm.productsCount = form?.count ?? 0;
-            await dosageForm.save();
-          });
+            return dosageForm.save({ session });
+          })
+        );
 
-          await DosageForm.updateMany(
-            { _id: { $nin: result.map((r) => r._id) } },
-            [
-              {
-                $set: {
-                  productsCount: 0,
-                },
+        await DosageForm.updateMany(
+          { _id: { $nin: result.map((r) => r._id) } },
+          [
+            {
+              $set: {
+                productsCount: 0,
               },
-            ]
-          );
-        } catch (error) {
-          throw new CustomAPIError.BadRequestError(error);
-        }
+            },
+          ],
+          { session }
+        );
       },
       // countBySubCategory: async function (subCategoryId) {
       //   const result = await this.aggregate([
@@ -205,69 +199,6 @@ const productSchema = new Schema(
       //   }
       // },
     },
-  }
-);
-
-// Set property(reviews) to product object when create it
-// productSchema.virtual('reviews', {
-//   ref: 'Review',
-//   localField: '_id',
-//   foreignField: 'product',
-//   justOne: false,
-// });
-
-productSchema.post('save', async function (doc) {
-  await Company.findByIdAndUpdate(doc.company, { $inc: { productsCount: 1 } });
-  await DosageForm.findByIdAndUpdate(doc.dosageForm, {
-    $inc: { productsCount: 1 },
-  });
-  doc.category.forEach(async function (cat) {
-    await Category.findByIdAndUpdate(cat, { $inc: { productsCount: 1 } });
-  });
-});
-
-productSchema.post(['deleteOne', 'findOneAndUpdate'], function () {
-  this.model.countByCategory();
-  this.model.countByCompany();
-  this.model.countByDosageForm();
-});
-
-productSchema.pre(
-  'deleteOne',
-  { document: false, query: true },
-  async function (next) {
-    const filter = this.getFilter();
-    const productId = filter._id;
-
-    if (productId) {
-      await Review.deleteMany({ product: productId });
-
-      // delete related carts as well
-      const cartIDs = await Cart.find({ 'items.product': productId }).select(
-        '_id'
-      );
-
-      cartIDs.map(async (id) => {
-        const cart = await Cart.findById(id);
-        const deletedItem = cart.items.find(
-          (item) => item.product.toString() === productId.toString()
-        );
-
-        cart.items = cart.items.filter(
-          (item) => item.product.toString() !== productId.toString()
-        );
-        cart.totalItems -= deletedItem.amount;
-        cart.totalPrice -= deletedItem.totalProductPrice;
-
-        if (cart.totalItems === 0) {
-          await cart.deleteOne();
-        } else {
-          await cart.save();
-        }
-      });
-    }
-
-    next();
   }
 );
 

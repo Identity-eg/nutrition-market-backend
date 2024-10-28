@@ -58,10 +58,10 @@ export const createOnlineOrder = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
-    const order = await Order.create(newOrder, { session });
+    const order = await Order.create([newOrder], { session });
     for (const item of orderItems) {
-      const product = await Product.findById(item.product, { session });
-      const company = await Company.findById(product.company, { session });
+      const product = await Product.findById(item.product);
+      const company = await Company.findById(product.company);
       company.ordersCount += item.amount;
       await company.save({ session });
 
@@ -78,11 +78,12 @@ export const createOnlineOrder = async (req, res) => {
       { $inc: { ordersCount: 1 } },
       { session }
     );
+    // await cart.deleteOne({ session });
     await session.commitTransaction();
     res.status(StatusCodes.CREATED).json({ order });
   } catch (error) {
     await session.abortTransaction();
-    throw new CustomError.BadRequestError('s');
+    throw new CustomError.CustomAPIError(error.message);
   } finally {
     session.endSession();
   }
@@ -133,19 +134,27 @@ export const createCashOnDeliveryOrder = async (req, res) => {
       company.ordersCount += item.amount;
       await company.save({ session });
 
-      await Variant.findByIdAndUpdate(item.variant, {
-        $inc: { sold: item.amount, quantity: -item.amount },
-      }).session(session);
+      await Variant.findByIdAndUpdate(
+        item.variant,
+        {
+          $inc: { sold: item.amount, quantity: -item.amount },
+        },
+        { session }
+      );
     }
-    await User.findByIdAndUpdate(req.user._id, {
-      $inc: { ordersCount: 1 },
-    }).session(session);
-    await cart.deleteOne().session(session);
+    await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $inc: { ordersCount: 1 },
+      },
+      { session }
+    );
+    await cart.deleteOne({ session });
     await session.commitTransaction();
     res.status(StatusCodes.CREATED).json({ order });
   } catch (error) {
     await session.abortTransaction();
-    throw new CustomError.BadRequestError(error);
+    throw new CustomError.CustomAPIError(error.message);
   } finally {
     await session.endSession();
   }
@@ -424,7 +433,7 @@ export const cancelOrder = async (req, res) => {
     res.status(StatusCodes.OK).json({ msg: 'Order cancelled successfully' });
   } catch (error) {
     await session.abortTransaction();
-    throw new CustomError.BadRequestError(error);
+    throw new CustomError.CustomAPIError(error.message);
   } finally {
     await session.endSession();
   }
