@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import fetch from 'node-fetch';
 import { StatusCodes } from 'http-status-codes';
 
 import Product from '../models/product.js';
@@ -72,12 +73,26 @@ export const getAllProducts = async (req, res) => {
   let queryObject = {};
 
   if (name) {
-    const nameQuery = { $regex: name, $options: 'i' };
+    const response = await fetch('http://192.168.1.111:8000', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: name,
+      }),
+    });
+
+    const data = await response.json();
+    // console.log({ data });
+
+    const nameQuery = { $regex: data.spell_corrected_text, $options: 'i' };
     const variants = await Variant.find({ name: nameQuery });
     const variantIDs = variants.map((variant) => variant?._id) ?? [];
     queryObject['$or'] = [
       { variants: { $in: variantIDs } },
       { 'nutritionFacts.ingredients.name': nameQuery },
+      { description: nameQuery },
     ];
   }
 
@@ -340,25 +355,12 @@ export const getSimilarProducts = async (req, res) => {
               _id: { $ne: product._id },
             },
           },
-          {
-            $group: {
-              _id: '$_id',
-              product: { $first: '$$ROOT' },
-            },
-          },
         ],
-        // Match products in the same category
         categoryMatches: [
           {
             $match: {
               category: { $in: product.category },
               _id: { $ne: product._id },
-            },
-          },
-          {
-            $group: {
-              _id: '$_id',
-              product: { $first: '$$ROOT' },
             },
           },
         ],
@@ -367,12 +369,6 @@ export const getSimilarProducts = async (req, res) => {
             $match: {
               dosageForm: product.dosageForm,
               _id: { $ne: product._id },
-            },
-          },
-          {
-            $group: {
-              _id: '$_id',
-              product: { $first: '$$ROOT' },
             },
           },
         ],
@@ -397,14 +393,16 @@ export const getSimilarProducts = async (req, res) => {
     {
       $group: {
         _id: '$combinedResults._id',
-        product: { $first: '$combinedResults.product' },
+        product: { $first: '$combinedResults' },
       },
     },
     {
-      $limit: +limit, // Limit to a maximum of 4 products
+      $limit: +limit,
     },
     {
-      $replaceRoot: { newRoot: '$product' }, // Replace root with the product document
+      $replaceRoot: {
+        newRoot: '$product',
+      },
     },
     {
       $lookup: {
