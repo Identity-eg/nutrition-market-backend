@@ -73,7 +73,7 @@ export const getAllProducts = async (req, res) => {
   let queryObject = {};
 
   if (name) {
-    const response = await fetch('http://192.168.1.111:8000', {
+    const response = await fetch(`${process.env.ORIGIN_AI}/correct-query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
