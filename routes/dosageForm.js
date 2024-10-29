@@ -6,26 +6,26 @@ import { USER_ROLES } from '../constants/index.js';
 
 const router = Router();
 router
-  .route('/')
-  .post(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.createDosageForm
-  )
-  .get(controllers.getDosageForms);
+	.route('/')
+	.post(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.createDosageForm
+	)
+	.get(controllers.getDosageForms);
 
 router
-  .route('/:id')
-  .get(controllers.getSingleDosageForm)
-  .patch(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.updateDosageForm
-  )
-  .delete(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.deleteDosageForm
-  );
+	.route('/:id')
+	.get(controllers.getSingleDosageForm)
+	.patch(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.updateDosageForm
+	)
+	.delete(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.deleteDosageForm
+	);
 
 export default router;

@@ -6,26 +6,26 @@ import { USER_ROLES } from '../constants/index.js';
 
 const router = Router();
 router
-  .route('/')
-  .post(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.createCategory
-  )
-  .get(controllers.getCategories);
+	.route('/')
+	.post(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.createCategory
+	)
+	.get(controllers.getCategories);
 
 router
-  .route('/:id')
-  .get(controllers.getSingleCategory)
-  .patch(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.updateCategory
-  )
-  .delete(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.deleteCategory
-  );
+	.route('/:id')
+	.get(controllers.getSingleCategory)
+	.patch(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.updateCategory
+	)
+	.delete(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.deleteCategory
+	);
 
 export default router;

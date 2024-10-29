@@ -5,72 +5,72 @@ const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
 
 const reviewSchema = new Schema(
-  {
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5,
-      required: [true, 'Please provide rating'],
-    },
-    title: {
-      type: String,
-      required: [true, 'Please provide review title'],
-    },
-    comment: {
-      type: String,
-      required: [true, 'Please provide review text'],
-    },
-    user: {
-      type: ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    product: {
-      type: ObjectId,
-      ref: 'Product',
-      required: true,
-    },
-  },
-  {
-    statics: {
-      calculateAverageRating: async function (productId) {
-        const result = await this.aggregate([
-          { $match: { product: productId } },
-          {
-            $group: {
-              _id: null,
-              averageRating: { $avg: '$rating' },
-              numReviews: { $sum: 1 },
-            },
-          },
-        ]);
-        console.log('review aggregation result', result);
+	{
+		rating: {
+			type: Number,
+			min: 1,
+			max: 5,
+			required: [true, 'Please provide rating'],
+		},
+		title: {
+			type: String,
+			required: [true, 'Please provide review title'],
+		},
+		comment: {
+			type: String,
+			required: [true, 'Please provide review text'],
+		},
+		user: {
+			type: ObjectId,
+			ref: 'User',
+			required: true,
+		},
+		product: {
+			type: ObjectId,
+			ref: 'Product',
+			required: true,
+		},
+	},
+	{
+		statics: {
+			calculateAverageRating: async function (productId) {
+				const result = await this.aggregate([
+					{ $match: { product: productId } },
+					{
+						$group: {
+							_id: null,
+							averageRating: { $avg: '$rating' },
+							numReviews: { $sum: 1 },
+						},
+					},
+				]);
+				console.log('review aggregation result', result);
 
-        try {
-          await this.model('Product').findOneAndUpdate(
-            { _id: productId },
-            {
-              averageRating: result[0]?.averageRating || 0,
-              numReviews: result[0]?.numReviews || 0,
-            }
-          );
-        } catch (error) {
-          throw new CustomError.BadRequestError(error.message);
-        }
-      },
-    },
-    timestamps: true,
-  }
+				try {
+					await this.model('Product').findOneAndUpdate(
+						{ _id: productId },
+						{
+							averageRating: result[0]?.averageRating || 0,
+							numReviews: result[0]?.numReviews || 0,
+						}
+					);
+				} catch (error) {
+					throw new CustomError.BadRequestError(error.message);
+				}
+			},
+		},
+		timestamps: true,
+	}
 );
 // to make sure the user can leave only one review per product
 reviewSchema.index({ product: 1, user: 1 }, { unique: true });
 
 reviewSchema.post('save', async function () {
-  await this.constructor.calculateAverageRating(this.product);
+	await this.constructor.calculateAverageRating(this.product);
 });
 
 reviewSchema.post('deleteOne', { document: true }, async function () {
-  await this.constructor.calculateAverageRating(this.product);
+	await this.constructor.calculateAverageRating(this.product);
 });
 
 const Review = model('Review', reviewSchema);

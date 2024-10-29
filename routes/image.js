@@ -6,26 +6,26 @@ import { USER_ROLES } from '../constants/index.js';
 
 const router = Router();
 router
-  .route('/')
-  .get(controllers.getImages)
-  .post(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.createImage
-  );
+	.route('/')
+	.get(controllers.getImages)
+	.post(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.createImage
+	);
 
 router
-  .route('/:id')
-  .get(controllers.getSingleImage)
-  .patch(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.updateImage
-  )
-  .delete(
-    authenticateUser,
-    authorizePermissions(USER_ROLES.superAdmin),
-    controllers.deleteImage
-  );
+	.route('/:id')
+	.get(controllers.getSingleImage)
+	.patch(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.updateImage
+	)
+	.delete(
+		authenticateUser,
+		authorizePermissions(USER_ROLES.superAdmin),
+		controllers.deleteImage
+	);
 
 export default router;

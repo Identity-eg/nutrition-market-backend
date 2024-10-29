@@ -31,34 +31,34 @@ import notFoundMiddleware from './middlewares/not-found.js';
 import errorHandlerMiddleware from './middlewares/error-handler.js';
 import { getGovernorateCities, getGovernorates } from './controllers/egypt.js';
 
-process.on('uncaughtException', (err) => {
-  console.log(err.name, err.message);
-  console.log('UNCAUGHT EXCEPTION! shutting down...');
-  process.exit(1);
+process.on('uncaughtException', err => {
+	console.log(err.name, err.message);
+	console.log('UNCAUGHT EXCEPTION! shutting down...');
+	process.exit(1);
 });
 
 dotenv.config();
 connectDb();
 
 cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_API_SECRET,
+	cloud_name: process.env.CLOUD_NAME,
+	api_key: process.env.CLOUD_API_KEY,
+	api_secret: process.env.CLOUD_API_SECRET,
 });
 
 // init App
 const app = express();
 
 app.use(
-  cors({
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-    origin: [
-      'https://supplement-food-backend.vercel.app', // by mistake i create it supplement-food-backend
-      'http://localhost:3000',
-      'http://localhost:5173',
-    ],
-  })
+	cors({
+		credentials: true,
+		methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+		origin: [
+			'https://supplement-food-backend.vercel.app', // by mistake i create it supplement-food-backend
+			'http://localhost:3000',
+			'http://localhost:5173',
+		],
+	})
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -89,11 +89,11 @@ app.use(errorHandlerMiddleware);
 const port = process.env.PORT || 5000;
 
 const server = app.listen(port, async () => {
-  console.log(`server running on port ${port}`);
+	console.log(`server running on port ${port}`);
 });
 
-process.on('unhandledRejection', (err) => {
-  console.log(err.name, err.message);
-  console.log('UNHANDLED REJECTION! shutting down...');
-  server.close(() => process.exit(1));
+process.on('unhandledRejection', err => {
+	console.log(err.name, err.message);
+	console.log('UNHANDLED REJECTION! shutting down...');
+	server.close(() => process.exit(1));
 });

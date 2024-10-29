@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import {
-  login,
-  logout,
-  register,
-  refresh,
-  forgotPassword,
-  resetPassword,
+	login,
+	logout,
+	register,
+	refresh,
+	forgotPassword,
+	resetPassword,
 } from '../controllers/auth.js';
 import loginLimiter from '../middlewares/loginLimiter.js';
 

@@ -5,10 +5,10 @@ import * as controllers from '../controllers/cart.js';
 const router = Router();
 
 router
-  .route('/')
-  .get(controllers.getCart)
-  .post(controllers.addItemToCart)
-  .delete(controllers.deleteCart);
+	.route('/')
+	.get(controllers.getCart)
+	.post(controllers.addItemToCart)
+	.delete(controllers.deleteCart);
 
 router.get('/sync', authenticateUser, controllers.syncCart);
 

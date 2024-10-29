@@ -4,8 +4,8 @@ import checkPermissions from './checkPermissions.js';
 import getCredFromCookies from './getCredFromCookies.js';
 
 export {
-  attachCookiesToResponse,
-  createTokenUser,
-  checkPermissions,
-  getCredFromCookies,
+	attachCookiesToResponse,
+	createTokenUser,
+	checkPermissions,
+	getCredFromCookies,
 };
