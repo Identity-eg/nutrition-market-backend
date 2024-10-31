@@ -37,10 +37,10 @@ export const register = async (req, res) => {
 
 	const tokenUser = createTokenUser(user);
 	const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-		expiresIn: '30m',
+		expiresIn: '1d',
 	});
 	const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
-		expiresIn: '1d',
+		expiresIn: '2d',
 	});
 
 	// Create secure cookies
@@ -89,10 +89,10 @@ export const login = async (req, res) => {
 
 	const tokenUser = createTokenUser(user);
 	const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-		expiresIn: '30m',
+		expiresIn: '1d',
 	});
 	const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
-		expiresIn: '1d',
+		expiresIn: '2d',
 	});
 
 	res.cookie(
@@ -134,7 +134,7 @@ export const refresh = async (req, res) => {
 
 		const tokenUser = createTokenUser(user);
 		const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-			expiresIn: '30m',
+			expiresIn: '1d',
 		});
 
 		return res.json({ accessToken });

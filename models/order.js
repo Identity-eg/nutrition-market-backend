@@ -8,15 +8,23 @@ const SingleOrderItemSchema = new Schema({
 	product: {
 		type: ObjectId,
 		ref: 'Product',
-		required: true,
+		required: [true, 'Please provide a product'],
+	},
+	company: {
+		type: Schema.Types.ObjectId,
+		ref: 'Company',
+		required: [true, 'Please provide a company'],
 	},
 	amount: { type: Number, default: 1 },
 	variant: {
 		type: ObjectId,
 		ref: 'Variant',
-		required: true,
+		required: [true, 'Please provide a variant'],
 	},
-	totalProductPrice: String,
+	totalProductPrice: {
+		type: Number,
+		required: [true, 'Please provide total product price'],
+	},
 });
 
 const orderSchema = new Schema(
@@ -24,20 +32,20 @@ const orderSchema = new Schema(
 		user: {
 			type: ObjectId,
 			ref: 'User',
-			required: true,
+			required: [true, 'Please provide a user'],
 		},
 		orderItems: [SingleOrderItemSchema],
 		shippingFee: {
 			type: Number,
-			required: true,
+			required: [true, 'Please provide shipping fee'],
 		},
 		subtotal: {
 			type: Number,
-			required: true,
+			required: [true, 'Please provide subtotal'],
 		},
 		total: {
 			type: Number,
-			required: true,
+			required: [true, 'Please provide total'],
 		},
 		status: {
 			type: String,
@@ -47,7 +55,7 @@ const orderSchema = new Schema(
 		shippingAddress: {
 			type: ObjectId,
 			ref: 'Address',
-			required: true,
+			required: [true, 'Please provide a shipping address'],
 		},
 		deliveryDate: {
 			type: Date,
@@ -70,7 +78,7 @@ const orderSchema = new Schema(
 					enum: Object.values(PAYMENT_METHODS).map(pm => pm.name),
 				},
 			},
-			required: true,
+			required: [true, 'Please provide a payment method'],
 		},
 	},
 	{

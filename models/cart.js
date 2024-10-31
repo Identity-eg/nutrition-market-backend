@@ -14,12 +14,17 @@ const cartSchema = new Schema(
 				product: {
 					type: Schema.Types.ObjectId,
 					ref: 'Product',
-					required: true,
+					required: [true, 'Please provide a product'],
+				},
+				company: {
+					type: Schema.Types.ObjectId,
+					ref: 'Company',
+					required: [true, 'Please provide a company'],
 				},
 				variant: {
 					type: Schema.Types.ObjectId,
 					ref: 'Variant',
-					required: true,
+					required: [true, 'Please provide a variant'],
 				},
 				amount: {
 					type: Number,
@@ -27,7 +32,7 @@ const cartSchema = new Schema(
 				},
 				totalProductPrice: {
 					type: Number,
-					required: true,
+					required: [true, 'Please provide total product price'],
 				},
 			},
 		],
@@ -37,7 +42,7 @@ const cartSchema = new Schema(
 		},
 		totalPrice: {
 			type: Number,
-			required: true,
+			required: [true, 'Please provide total price'],
 		},
 		expireAt: {
 			type: Date,

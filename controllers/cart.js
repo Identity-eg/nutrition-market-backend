@@ -27,7 +27,7 @@ export const getCart = async (req, res) => {
 // #################### Add To Cart ####################
 export const addItemToCart = async (req, res) => {
 	// const { _id: userId } = req.user;
-	const { amount, variantId, productId } = req.body;
+	const { amount, variantId, productId, companyId } = req.body;
 
 	// 1) Check if product doesn't exist
 	const product = await Product.findById(productId);
@@ -68,6 +68,7 @@ export const addItemToCart = async (req, res) => {
 			// in case item doesn't exist
 			cart.items.push({
 				product: productId,
+				company: companyId,
 				variant: variantId,
 				amount,
 				totalProductPrice: calculatedPrice,
@@ -105,6 +106,7 @@ export const addItemToCart = async (req, res) => {
 			{
 				product: productId,
 				variant: variantId,
+				company: companyId,
 				amount,
 				totalProductPrice: calculatedPrice,
 			},
@@ -143,6 +145,7 @@ export const syncCart = async (req, res) => {
 					acc[item.product] = {
 						product: item.product,
 						variant: item.variant,
+						company: item.company,
 						_id: item._id,
 						amount: 0,
 						totalProductPrice: 0,

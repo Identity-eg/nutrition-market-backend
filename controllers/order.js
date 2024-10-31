@@ -197,9 +197,7 @@ export const getAllOrders = async (req, res) => {
 	}
 
 	if (company) {
-		queryObject['orderItems.product'] = {
-			$in: await Product.find({ company }).select('_id'),
-		};
+		queryObject['orderItems.company'] = company;
 	}
 
 	if (paid) {
@@ -330,9 +328,7 @@ export const getCompanyOrders = async (req, res) => {
 	let skip = (Number(page) - 1) * Number(limit);
 
 	let queryObject = {
-		'orderItems.product': {
-			$in: await Product.find({ company: req.user.company }).select('_id'),
-		},
+		'orderItems.company': req.user.company,
 	};
 
 	if (name) {
