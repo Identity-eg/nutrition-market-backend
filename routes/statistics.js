@@ -15,7 +15,7 @@ router.get(
 	controllers.getTotalSales
 );
 router.get(
-	'/monthly-sales',
+	'/monthly-sales/:year',
 	authenticateUser,
 	authorizePermissions(USER_ROLES.admin, USER_ROLES.superAdmin),
 	controllers.getMonthlySales

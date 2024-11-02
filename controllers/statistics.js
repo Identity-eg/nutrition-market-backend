@@ -1,18 +1,18 @@
-import { StatusCodes } from 'http-status-codes';
-import Review from '../models/review.js';
-import Order from '../models/order.js';
-import CustomError from '../errors/index.js';
-import { checkPermissions } from '../utils/index.js';
 import mongoose from 'mongoose';
+import { StatusCodes } from 'http-status-codes';
+import Order from '../models/order.js';
 
 // ################# Total Sales #################9
 export const getTotalSales = async (req, res) => {
-	const companyId = req.user.company || req.body.companyId;
+	const companyId = req.user.company;
 	const period = req.query.period;
 
-	let queryObject = {
-		'orderItems.company': req.user.company,
-	};
+	let queryObject = {};
+
+	if (companyId) {
+		queryObject['orderItems.company'] = companyId;
+	}
+
 	if (period) {
 		const fromDate = period.from ? new Date(period.from) : undefined;
 		const toDate = period.to ? new Date(period.to) : undefined;
@@ -26,12 +26,11 @@ export const getTotalSales = async (req, res) => {
 	const companyOrders = await Order.find(queryObject).populate([
 		{ path: 'user', select: 'firstName lastName email' },
 	]);
-	console.log(companyOrders);
 
 	const result = companyOrders.reduce(
 		(acc, order) => {
 			order.orderItems.forEach(item => {
-				if (item.company.toString() === companyId) {
+				if (!companyId || item.company.toString() === companyId) {
 					acc.totalSales += parseFloat(item.totalProductPrice);
 					acc.totalProductsSold += item.amount;
 				}
@@ -44,9 +43,7 @@ export const getTotalSales = async (req, res) => {
 	const totalSales = result.totalSales;
 	const totalProductsSold = result.totalProductsSold;
 	const totalOrders = companyOrders.length;
-	const averageOrderValue = companyOrders.length
-		? totalSales / totalProductsSold
-		: 0;
+	const averageOrderValue = companyOrders.length ? totalSales / totalOrders : 0;
 	const recentSales = companyOrders.slice(0, 5);
 
 	res.status(StatusCodes.CREATED).json({
@@ -60,26 +57,33 @@ export const getTotalSales = async (req, res) => {
 
 // ################# Get All Reviews #################
 export const getMonthlySales = async (req, res) => {
-	const companyId = req.user.company || req.body.companyId;
+	const companyId = req.user.company;
+	const year = req.params.year;
+
 	const monthlySales = await Order.aggregate([
 		{
 			$match: {
 				// paid: true,
 				createdAt: {
-					$gte: new Date(`${2024}-01-01`),
-					$lte: new Date(`${2024}-12-31`),
+					$gte: new Date(`${year}-01-01`),
+					$lte: new Date(`${year}-12-31`),
 				},
 			},
 		},
 		{
 			$unwind: '$orderItems',
 		},
-		{
-			$match: {
-				'orderItems.company':
-					mongoose.Types.ObjectId.createFromHexString(companyId),
-			},
-		},
+		// Difference between Admin and Super Admin
+		...(companyId
+			? [
+					{
+						$match: {
+							'orderItems.company':
+								mongoose.Types.ObjectId.createFromHexString(companyId),
+						},
+					},
+				]
+			: []),
 		{
 			$group: {
 				_id: { month: { $month: '$createdAt' } },
@@ -102,35 +106,4 @@ export const getMonthlySales = async (req, res) => {
 	res.status(StatusCodes.CREATED).json({
 		monthlySales,
 	});
-};
-
-// ################# Get Single Review #################
-export const getSingleReview = async (req, res) => {
-	const { id: reviewId } = req.params;
-
-	const review = await Review.findOne({ _id: reviewId });
-
-	if (!review) {
-		throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
-	}
-
-	res.status(StatusCodes.OK).json({ review });
-};
-
-// ################# Update Review #################
-export const updateReview = async (req, res) => {};
-
-// ################# Delete Review #################
-export const deleteReview = async (req, res) => {
-	const { id: reviewId } = req.params;
-
-	const review = await Review.findOne({ _id: reviewId });
-
-	if (!review) {
-		throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
-	}
-
-	checkPermissions(req.user, review.user);
-	await review.deleteOne();
-	res.status(StatusCodes.OK).json({ msg: 'Success! Review removed' });
 };
