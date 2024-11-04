@@ -9,7 +9,7 @@ import {
 	uploadSingleImage,
 	uploadMultipleImage,
 } from '../controllers/upload.js';
-import { USER_ROLES } from '../constants/index.js';
+import { usersAllowedToAccessDashboard } from '../constants/index.js';
 import {
 	resizeMultipleImage,
 	resizeSingleImage,
@@ -19,7 +19,7 @@ import {
 router.post(
 	'/single',
 	authenticateUser,
-	authorizePermissions(USER_ROLES.superAdmin, USER_ROLES.admin),
+	authorizePermissions(...usersAllowedToAccessDashboard),
 	uploadWithMulter.single('image'),
 	resizeSingleImage,
 	uploadSingleImage
@@ -28,7 +28,7 @@ router.post(
 router.post(
 	'/multiple',
 	authenticateUser,
-	authorizePermissions(USER_ROLES.superAdmin, USER_ROLES.admin),
+	authorizePermissions(...usersAllowedToAccessDashboard),
 	uploadWithMulter.array('images', 5),
 	resizeMultipleImage,
 	uploadMultipleImage

@@ -10,6 +10,7 @@ import { usersAllowedToAccessDashboard } from '../constants/index.js';
 
 router
 	.route('/')
+	.get(controllers.getAllVariants)
 	.post(
 		authenticateUser,
 		authorizePermissions(...usersAllowedToAccessDashboard),

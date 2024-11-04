@@ -54,11 +54,7 @@ app.use(
 	cors({
 		credentials: true,
 		methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-		origin: [
-			'https://supplement-food-backend.vercel.app', // by mistake i create it supplement-food-backend
-			'http://localhost:3000',
-			'http://localhost:5173',
-		],
+		origin: [process.env.ORIGIN_DEV_FRONTEND, process.env.ORIGIN_DEV_DASHBOARD],
 	})
 );
 app.use(express.json());

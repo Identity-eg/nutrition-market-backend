@@ -13,7 +13,7 @@ import {
 	getSimilarProducts,
 	getSingleProductReviews,
 } from '../controllers/product.js';
-import { USER_ROLES } from '../constants/index.js';
+import { usersAllowedToAccessDashboard } from '../constants/index.js';
 
 const router = Router();
 
@@ -33,17 +33,11 @@ router
 	.route('/:id')
 	.get(getSingleProduct)
 	.patch(
-		[
-			authenticateUser,
-			authorizePermissions(USER_ROLES.superAdmin, USER_ROLES.admin),
-		],
+		[authenticateUser, authorizePermissions(...usersAllowedToAccessDashboard)],
 		updateProduct
 	)
 	.delete(
-		[
-			authenticateUser,
-			authorizePermissions(USER_ROLES.superAdmin, USER_ROLES.admin),
-		],
+		[authenticateUser, authorizePermissions(...usersAllowedToAccessDashboard)],
 		deleteProduct
 	);
 
