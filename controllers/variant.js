@@ -18,12 +18,17 @@ export const createVariant = async (req, res) => {
 	res.status(StatusCodes.CREATED).json({ variant });
 };
 
+export const getAllVariants = async (req, res) => {
+	const variants = await Variant.find({});
+	res.status(StatusCodes.OK).json({ variants });
+};
+
 export const getVariant = async (req, res) => {
 	const variant = await Variant.findById(req.params.variantId);
 	if (!variant) {
 		throw new CustomError.BadRequestError('No variant found with this id');
 	}
-	res.status(StatusCodes.CREATED).json({ variant });
+	res.status(StatusCodes.OK).json({ variant });
 };
 
 export const updateVariant = async (req, res) => {
@@ -39,7 +44,7 @@ export const updateVariant = async (req, res) => {
 			runValidators: true,
 		}
 	);
-	res.status(StatusCodes.CREATED).json({ variant: updatedVariant });
+	res.status(StatusCodes.OK).json({ variant: updatedVariant });
 };
 
 export const deleteVariant = async (req, res) => {
@@ -60,30 +65,30 @@ export const deleteVariant = async (req, res) => {
 			'items.variant': variantId,
 		}).select('_id');
 
-		await Promise.all(
-			cartIDs.map(async id => {
-				const cart = await Cart.findById(id);
-				const deletedItem = cart.items.find(
-					item => item.variant.toString() === variantId.toString()
-				);
+		if (cartIDs.length > 0) {
+			await Promise.all(
+				cartIDs.map(async id => {
+					const cart = await Cart.findById(id);
+					const deletedItem = cart.items.find(
+						item => item.variant.toString() === variantId.toString()
+					);
 
-				cart.items = cart.items.filter(
-					item => item.variant.toString() !== variantId.toString()
-				);
-				cart.totalItems -= deletedItem.amount;
-				cart.totalPrice -= deletedItem.totalProductPrice;
+					cart.items = cart.items.filter(
+						item => item.variant.toString() !== variantId.toString()
+					);
+					cart.totalItems -= deletedItem.amount;
+					cart.totalPrice -= deletedItem.totalProductPrice;
 
-				if (cart.totalItems === 0) {
-					return cart.deleteOne({ session });
-				} else {
-					return cart.save({ session });
-				}
-			})
-		);
+					if (cart.totalItems === 0) {
+						return cart.deleteOne({ session });
+					} else {
+						return cart.save({ session });
+					}
+				})
+			);
+		}
 		await session.commitTransaction();
-		res
-			.status(StatusCodes.CREATED)
-			.json({ msg: 'Variant deleted successfuly' });
+		res.status(StatusCodes.OK).json({ msg: 'Variant deleted successfuly' });
 	} catch (error) {
 		await session.abortTransaction();
 		throw new CustomError.CustomAPIError(error.message);

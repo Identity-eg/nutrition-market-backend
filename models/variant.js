@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 
 const { model, Schema } = mongoose;
+const { ObjectId } = Schema.Types;
 
 const variantSchema = new Schema(
 	{
+		product: {
+			type: ObjectId,
+			ref: 'Company',
+		},
 		name: {
 			type: String,
 			required: [true, 'Please provide product name'],

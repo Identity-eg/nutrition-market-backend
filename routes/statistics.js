@@ -4,21 +4,27 @@ import {
 	authorizePermissions,
 } from '../middlewares/full-auth.js';
 import * as controllers from '../controllers/statistics.js';
-import { USER_ROLES } from '../constants/index.js';
+import { usersAllowedToAccessDashboard } from '../constants/index.js';
 
 const router = Router();
 
 router.get(
 	'/total-sales',
 	authenticateUser,
-	authorizePermissions(USER_ROLES.admin, USER_ROLES.superAdmin),
+	authorizePermissions(...usersAllowedToAccessDashboard),
 	controllers.getTotalSales
 );
 router.get(
 	'/monthly-sales/:year',
 	authenticateUser,
-	authorizePermissions(USER_ROLES.admin, USER_ROLES.superAdmin),
+	authorizePermissions(...usersAllowedToAccessDashboard),
 	controllers.getMonthlySales
+);
+router.get(
+	'/top-selling/:year',
+	authenticateUser,
+	authorizePermissions(...usersAllowedToAccessDashboard),
+	controllers.getTopSellingProducts
 );
 
 export default router;

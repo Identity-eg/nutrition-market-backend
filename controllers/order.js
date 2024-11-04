@@ -2,7 +2,6 @@ import { StatusCodes } from 'http-status-codes';
 
 import Order from '../models/order.js';
 import Cart from '../models/cart.js';
-import Product from '../models/product.js';
 import User from '../models/user.js';
 import Variant from '../models/variant.js';
 
@@ -31,12 +30,12 @@ export const createOnlineOrder = async (req, res) => {
 		);
 	}
 
-	for (const item of orderItems.items) {
+	for (const item of orderItems) {
 		const variant = await Variant.findById(item.variant);
 		const isExceedQuantity = variant?.quantity < (item.amount ?? 0);
 		if (isExceedQuantity)
 			throw new CustomError.BadRequestError(
-				'The requested quantity is not available, it seems to be sold!!, try to reduce your requested quantity'
+				'The requested quantity is not available, try to reduce your requested quantity'
 			);
 	}
 
@@ -58,21 +57,34 @@ export const createOnlineOrder = async (req, res) => {
 	const session = await mongoose.startSession();
 	try {
 		session.startTransaction();
-		const order = await Order.create([newOrder], { session });
-		for (const item of orderItems) {
-			const product = await Product.findById(item.product);
-			const company = await Company.findById(product.company);
-			company.ordersCount += item.amount;
-			await company.save({ session });
+		const order = new Order(newOrder);
+		await order.save({ session });
 
-			await Variant.findByIdAndUpdate(
-				item.variant,
-				{
-					$inc: { sold: item.amount, quantity: -item.amount },
-				},
-				{ session }
-			);
-		}
+		const uniqueCompanySet = new Set(orderItems.map(item => item.company));
+		const uniqueCompanyArray = [...uniqueCompanySet];
+
+		await Promise.all(
+			uniqueCompanyArray.map(com =>
+				Company.findByIdAndUpdate(
+					com,
+					{ $inc: { ordersCount: 1 } },
+					{ session }
+				)
+			)
+		);
+
+		await Promise.all(
+			orderItems.map(item =>
+				Variant.findByIdAndUpdate(
+					item.variant,
+					{
+						$inc: { sold: item.amount, quantity: -item.amount },
+					},
+					{ session }
+				)
+			)
+		);
+
 		await User.findByIdAndUpdate(
 			req.user._id,
 			{ $inc: { ordersCount: 1 } },
@@ -104,7 +116,7 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 		const isExceedQuantity = variant?.quantity < (item.amount ?? 0);
 		if (isExceedQuantity)
 			throw new CustomError.BadRequestError(
-				'The requested quantity is not available, it seems to be sold!!, try to reduce your requested quantity'
+				'The requested quantity is not available, try to reduce your requested quantity'
 			);
 	}
 
@@ -127,21 +139,33 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 	const session = await mongoose.startSession();
 	try {
 		session.startTransaction();
-		const order = await Order.create([newOrder], { session });
-		for (const item of cart.items) {
-			const product = await Product.findById(item.product);
-			const company = await Company.findById(product.company);
-			company.ordersCount += item.amount;
-			await company.save({ session });
+		const order = new Order(newOrder);
+		await order.save({ session });
 
-			await Variant.findByIdAndUpdate(
-				item.variant,
-				{
-					$inc: { sold: item.amount, quantity: -item.amount },
-				},
-				{ session }
-			);
-		}
+		const uniqueCompanySet = new Set(cart.items.map(item => item.company));
+		const uniqueCompanyArray = [...uniqueCompanySet];
+		await Promise.all(
+			uniqueCompanyArray.map(com =>
+				Company.findByIdAndUpdate(
+					com,
+					{ $inc: { ordersCount: 1 } },
+					{ session }
+				)
+			)
+		);
+
+		await Promise.all(
+			cart.items.map(item =>
+				Variant.findByIdAndUpdate(
+					item.variant,
+					{
+						$inc: { sold: item.amount, quantity: -item.amount },
+					},
+					{ session }
+				)
+			)
+		);
+
 		await User.findByIdAndUpdate(
 			req.user._id,
 			{
@@ -149,6 +173,7 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 			},
 			{ session }
 		);
+
 		await cart.deleteOne({ session });
 		await session.commitTransaction();
 		res.status(StatusCodes.CREATED).json({ order });
@@ -409,22 +434,41 @@ export const cancelOrder = async (req, res) => {
 	const session = await mongoose.startSession();
 	try {
 		session.startTransaction();
-		for (const item of order.orderItems) {
-			const product = await Product.findById(item.product);
-			const company = await Company.findById(product.company);
-			company.ordersCount -= item.amount;
-			await company.save({ session });
+		const uniqueCompanySet = new Set(
+			order.orderItems.map(item => item.company)
+		);
+		const uniqueCompanyArray = [...uniqueCompanySet];
+		await Promise.all(
+			uniqueCompanyArray.map(com =>
+				Company.findByIdAndUpdate(
+					com,
+					{ $inc: { ordersCount: -1 } },
+					{ session }
+				)
+			)
+		);
 
-			await Variant.findByIdAndUpdate(item.variant, {
-				$inc: { sold: -item.amount, quantity: item.amount },
-			}).session(session);
-		}
+		await Promise.all(
+			order.orderItems.map(item =>
+				Variant.findByIdAndUpdate(
+					item.variant,
+					{
+						$inc: { sold: -item.amount, quantity: item.amount },
+					},
+					{ session }
+				)
+			)
+		);
 
-		await User.findByIdAndUpdate(order.user, {
-			$inc: { ordersCount: -1 },
-		}).session(session);
+		await User.findByIdAndUpdate(
+			order.user,
+			{
+				$inc: { ordersCount: -1 },
+			},
+			{ session }
+		);
 
-		await order.deleteOne().session(session);
+		await order.deleteOne({ session });
 		await session.commitTransaction();
 		res.status(StatusCodes.OK).json({ msg: 'Order cancelled successfully' });
 	} catch (error) {

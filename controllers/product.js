@@ -18,7 +18,18 @@ export const createProduct = async (req, res) => {
 	try {
 		session.startTransaction();
 
-		const product = await Product.create([req.body], { session });
+		const variants = await Variant.create(req.body.variants, { session });
+
+		req.body.variants = variants.map(variant => variant._id);
+		const product = new Product(req.body);
+		await product.save({ session });
+
+		await Promise.all(
+			variants.map(variant => {
+				variant.product = product._id;
+				return variant.save({ session });
+			})
+		);
 
 		await Company.findByIdAndUpdate(
 			req.body.company,
@@ -36,13 +47,28 @@ export const createProduct = async (req, res) => {
 			{ session }
 		);
 
-		req.body.category.forEach(
-			async function (cat) {
-				await Category.findByIdAndUpdate(cat, {
-					$inc: { productsCount: 1 },
-				});
-			},
-			{ session }
+		await Promise.all(
+			req.body.category.map(cat =>
+				Category.findByIdAndUpdate(
+					cat,
+					{
+						$inc: { productsCount: 1 },
+					},
+					{ session }
+				)
+			)
+		);
+
+		await Promise.all(
+			req.body.variants.map(variant =>
+				Variant.findByIdAndUpdate(
+					variant,
+					{
+						product: product._id,
+					},
+					{ session }
+				)
+			)
 		);
 
 		await session.commitTransaction();
@@ -167,7 +193,6 @@ export const getSingleProduct = async (req, res) => {
 };
 
 // ######################################################
-// if you decide to not use virtual
 export const getSingleProductReviews = async (req, res) => {
 	const { id: productId } = req.params;
 	const reviews = await Review.find({ product: productId }).populate([
@@ -203,6 +228,18 @@ export const updateProduct = async (req, res) => {
 	session.startTransaction();
 
 	try {
+		if (req.body.variants) {
+			const variantsWithoutIds = req.body.variants
+				.filter(variant => !variant._id)
+				.map(variant => ({ ...variant, product: product._id }));
+
+			if (variantsWithoutIds) {
+				const variants = await Variant.create(variantsWithoutIds, { session });
+				req.body['$push'] = { variants: { $each: variants.map(v => v._id) } };
+			}
+			delete req.body.variants;
+		}
+
 		const updatedProduct = await Product.findOneAndUpdate(
 			{ _id: productId },
 			req.body,

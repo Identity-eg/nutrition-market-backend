@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 import Order from '../models/order.js';
+import Product from '../models/product.js';
 
 // ################# Total Sales #################9
 export const getTotalSales = async (req, res) => {
@@ -43,7 +44,9 @@ export const getTotalSales = async (req, res) => {
 	const totalSales = result.totalSales;
 	const totalProductsSold = result.totalProductsSold;
 	const totalOrders = companyOrders.length;
-	const averageOrderValue = companyOrders.length ? totalSales / totalOrders : 0;
+	const averageOrderValue = companyOrders.length
+		? (totalSales / totalOrders).toFixed(2)
+		: 0;
 	const recentSales = companyOrders.slice(0, 5);
 
 	res.status(StatusCodes.CREATED).json({
@@ -55,7 +58,7 @@ export const getTotalSales = async (req, res) => {
 	});
 };
 
-// ################# Get All Reviews #################
+// ################# Monthly Sales #################
 export const getMonthlySales = async (req, res) => {
 	const companyId = req.user.company;
 	const year = req.params.year;
@@ -105,5 +108,56 @@ export const getMonthlySales = async (req, res) => {
 	]);
 	res.status(StatusCodes.CREATED).json({
 		monthlySales,
+	});
+};
+
+// ################# Top Selling Products Sales #################
+export const getTopSellingProducts = async (req, res) => {
+	const companyId = req.user.company;
+	const topSelling = await Product.aggregate([
+		{
+			$match: {
+				// paid: true,
+				createdAt: {
+					$gte: new Date(`${2024}-01-01`),
+					$lte: new Date(`${2024}-12-31`),
+				},
+			},
+		},
+		...(companyId
+			? [
+					{
+						$match: {
+							company: mongoose.Types.ObjectId.createFromHexString(companyId),
+						},
+					},
+				]
+			: []),
+		{
+			$lookup: {
+				from: 'variants', // Collection name of variants
+				localField: 'variants',
+				foreignField: '_id',
+				as: 'variants',
+			},
+		},
+		{
+			$unwind: '$variants',
+		},
+		// Step 3: Project the required fields in the desired format
+		{
+			$project: {
+				company: '$company',
+				variant: '$variants',
+				totalSold: '$variants.sold',
+			},
+		},
+		{
+			$sort: { totalSold: -1 },
+		},
+		{ $limit: 10 },
+	]);
+	res.status(StatusCodes.CREATED).json({
+		topSelling,
 	});
 };
