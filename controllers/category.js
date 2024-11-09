@@ -34,6 +34,10 @@ export const getSingleCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
 	const { id: categoryId } = req.params;
 
+	if (req.body.name) {
+		req.body.slug = slugify(req.body.name, { lower: true });
+	}
+
 	const category = await Category.findOneAndUpdate(
 		{ _id: categoryId },
 		req.body,

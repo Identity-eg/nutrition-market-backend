@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import Order from '../models/order.js';
 import Product from '../models/product.js';
 
-// ################# Total Sales #################9
+// ################# Total Sales #################
 export const getTotalSales = async (req, res) => {
 	const companyId = req.user.company;
 	const period = req.query.period;
@@ -24,9 +24,9 @@ export const getTotalSales = async (req, res) => {
 		};
 	}
 
-	const companyOrders = await Order.find(queryObject).populate([
-		{ path: 'user', select: 'firstName lastName email' },
-	]);
+	const companyOrders = await Order.find(queryObject)
+		.sort('-createdAt')
+		.populate([{ path: 'user', select: 'firstName lastName email' }]);
 
 	const result = companyOrders.reduce(
 		(acc, order) => {
@@ -44,9 +44,7 @@ export const getTotalSales = async (req, res) => {
 	const totalSales = result.totalSales;
 	const totalProductsSold = result.totalProductsSold;
 	const totalOrders = companyOrders.length;
-	const averageOrderValue = companyOrders.length
-		? (totalSales / totalOrders).toFixed(2)
-		: 0;
+	const averageOrderValue = companyOrders.length ? totalSales / totalOrders : 0;
 	const recentSales = companyOrders.slice(0, 5);
 
 	res.status(StatusCodes.CREATED).json({
@@ -111,9 +109,11 @@ export const getMonthlySales = async (req, res) => {
 	});
 };
 
-// ################# Top Selling Products Sales #################
+// ################# Top Selling Products #################
 export const getTopSellingProducts = async (req, res) => {
 	const companyId = req.user.company;
+	const period = req.query.period;
+
 	const topSelling = await Product.aggregate([
 		{
 			$match: {
@@ -135,7 +135,7 @@ export const getTopSellingProducts = async (req, res) => {
 			: []),
 		{
 			$lookup: {
-				from: 'variants', // Collection name of variants
+				from: 'variants',
 				localField: 'variants',
 				foreignField: '_id',
 				as: 'variants',
@@ -144,9 +144,9 @@ export const getTopSellingProducts = async (req, res) => {
 		{
 			$unwind: '$variants',
 		},
-		// Step 3: Project the required fields in the desired format
 		{
 			$project: {
+				// Category: '$category',
 				company: '$company',
 				variant: '$variants',
 				totalSold: '$variants.sold',
@@ -155,9 +155,69 @@ export const getTopSellingProducts = async (req, res) => {
 		{
 			$sort: { totalSold: -1 },
 		},
-		{ $limit: 10 },
+		{ $limit: 5 },
 	]);
-	res.status(StatusCodes.CREATED).json({
-		topSelling,
+	res.status(StatusCodes.OK).json({
+		products: topSelling,
+	});
+};
+
+// ################# Top Selling Categories #################
+export const getTopSellingCategory = async (req, res) => {
+	const topSelling = await Product.aggregate([
+		{
+			$match: {
+				// paid: true,
+				createdAt: {
+					$gte: new Date(`${2024}-01-01`),
+					$lte: new Date(`${2024}-12-31`),
+				},
+			},
+		},
+		{
+			$lookup: {
+				from: 'variants',
+				localField: 'variants',
+				foreignField: '_id',
+				as: 'variants',
+			},
+		},
+		{
+			$unwind: '$variants',
+		},
+		{
+			$project: {
+				category: '$category',
+				totalSold: '$variants.sold',
+			},
+		},
+		{
+			$unwind: '$category',
+		},
+		{
+			$group: {
+				_id: '$category',
+				totalSold: { $sum: '$totalSold' },
+			},
+		},
+		{
+			$lookup: {
+				from: 'categories',
+				localField: '_id',
+				foreignField: '_id',
+				as: 'category',
+			},
+		},
+		{
+			$unwind: '$category',
+		},
+		{
+			$sort: { totalSold: -1 },
+		},
+		{ $limit: 5 },
+	]);
+
+	res.status(StatusCodes.OK).json({
+		categories: topSelling,
 	});
 };

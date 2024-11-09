@@ -263,7 +263,7 @@ export const getSingleOrder = async (req, res) => {
 	const order = await Order.findOne({ _id: orderId }).populate([
 		'orderItems.variant',
 		'shippingAddress',
-		{ path: 'orderItems.product', select: 'company dosageForm category' },
+		{ path: 'orderItems.product', select: 'dosageForm category' },
 	]);
 	if (!order) {
 		throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
@@ -272,9 +272,7 @@ export const getSingleOrder = async (req, res) => {
 	const superAdmin = req.user.role === USER_ROLES.superAdmin;
 	const adminOwner =
 		req.user.role === USER_ROLES.admin &&
-		order.orderItems.some(
-			item => item.product.company.toString() === req.user.company
-		);
+		order.orderItems.some(item => item.company.toString() === req.user.company);
 	const userOwner = req.user._id === order.user.toString();
 
 	if (!superAdmin && !adminOwner && !userOwner) {

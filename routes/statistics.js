@@ -21,10 +21,16 @@ router.get(
 	controllers.getMonthlySales
 );
 router.get(
-	'/top-selling/:year',
+	'/top-selling-products',
 	authenticateUser,
 	authorizePermissions(...usersAllowedToAccessDashboard),
 	controllers.getTopSellingProducts
+);
+router.get(
+	'/top-selling-categories',
+	authenticateUser,
+	authorizePermissions(...usersAllowedToAccessDashboard),
+	controllers.getTopSellingCategory
 );
 
 export default router;
