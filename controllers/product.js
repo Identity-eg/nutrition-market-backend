@@ -324,7 +324,7 @@ export const getSingleProduct = async (req, res) => {
 		},
 		{
 			path: 'category company dosageForm',
-			select: 'name',
+			select: 'name slug',
 			options: { _recursed: true },
 		},
 	]);
