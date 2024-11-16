@@ -591,6 +591,7 @@ export const getSimilarProducts = async (req, res) => {
 				as: 'variants',
 			},
 		},
+		{ $unwind: '$variants' },
 	]);
 
 	return res.json({
