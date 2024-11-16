@@ -14,9 +14,11 @@ router
 	)
 	.get(controllers.getCategories);
 
+router.get('/slug/:slug', controllers.getSingleCategoryBySlug);
+
 router
 	.route('/:id')
-	.get(controllers.getSingleCategory)
+	.get(controllers.getSingleCategoryById)
 	.patch(
 		authenticateUser,
 		authorizePermissions(USER_ROLES.superAdmin),

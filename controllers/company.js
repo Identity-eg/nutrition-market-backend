@@ -18,11 +18,23 @@ export const getCompanys = async (req, res) => {
 	res.status(StatusCodes.OK).json({ companies });
 };
 
-// ################# Get All Company #################
-export const getSingleCompany = async (req, res) => {
+// ################# Get Company by Slug #################
+export const getSingleCompanyBySlug = async (req, res) => {
+	const { slug } = req.params;
+
+	const company = await Company.findOne({ slug });
+
+	if (!company) {
+		throw new CustomError.NotFoundError(`No company with slug : ${slug}`);
+	}
+
+	res.status(StatusCodes.OK).json({ company });
+};
+// ################# Get Company by ID #################
+export const getSingleCompanyById = async (req, res) => {
 	const { id: companyId } = req.params;
 
-	const company = await Company.findOne({ _id: companyId });
+	const company = await Company.findById(companyId);
 
 	if (!company) {
 		throw new CustomError.NotFoundError(`No company with id : ${companyId}`);

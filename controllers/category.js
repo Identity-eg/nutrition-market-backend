@@ -17,14 +17,26 @@ export const getCategories = async (req, res) => {
 	res.status(StatusCodes.OK).json({ categories });
 };
 
-// ################ Get Category ##################
-export const getSingleCategory = async (req, res) => {
+// ################ Get Category by ID ##################
+export const getSingleCategoryById = async (req, res) => {
 	const { id: categoryId } = req.params;
 
-	const category = await Category.findOne({ _id: categoryId }); // virtuals
+	const category = await Category.findById(categoryId); // virtuals
 
 	if (!category) {
 		throw new CustomError.NotFoundError(`No category with id : ${categoryId}`);
+	}
+
+	res.status(StatusCodes.OK).json({ category });
+};
+// ################ Get Category by Slug ##################
+export const getSingleCategoryBySlug = async (req, res) => {
+	const { slug } = req.params;
+
+	const category = await Category.findOne({ slug }); // virtuals
+
+	if (!category) {
+		throw new CustomError.NotFoundError(`No category with slug : ${slug}`);
 	}
 
 	res.status(StatusCodes.OK).json({ category });

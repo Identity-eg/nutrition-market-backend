@@ -17,9 +17,11 @@ router
 	)
 	.get(controllers.getCompanys);
 
+router.get('/slug/:slug', controllers.getSingleCompanyBySlug);
+
 router
 	.route('/:id')
-	.get(controllers.getSingleCompany)
+	.get(controllers.getSingleCompanyById)
 	.patch(
 		authenticateUser,
 		authorizePermissions(...usersAllowedToAccessDashboard),

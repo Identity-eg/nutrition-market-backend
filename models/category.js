@@ -18,7 +18,7 @@ const categorySchema = new Schema({
 	},
 	cover: {
 		type: String,
-		required: true,
+		// required: true,
 	},
 	productsCount: { type: Number, default: 0 },
 });
