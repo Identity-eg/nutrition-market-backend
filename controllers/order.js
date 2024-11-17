@@ -142,7 +142,10 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 		const order = new Order(newOrder);
 		await order.save({ session });
 
-		const uniqueCompanySet = new Set(cart.items.map(item => item.company));
+		const uniqueCompanySet = new Set(
+			cart.items.map(item => item.company.toString())
+		);
+
 		const uniqueCompanyArray = [...uniqueCompanySet];
 		await Promise.all(
 			uniqueCompanyArray.map(com =>

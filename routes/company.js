@@ -17,6 +17,8 @@ router
 	)
 	.get(controllers.getCompanys);
 
+router.get('/popular', controllers.getPopularCompanys);
+
 router.get('/slug/:slug', controllers.getSingleCompanyBySlug);
 
 router

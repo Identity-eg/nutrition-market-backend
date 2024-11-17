@@ -164,6 +164,7 @@ export const getTopSellingProducts = async (req, res) => {
 
 // ################# Top Selling Categories #################
 export const getTopSellingCategory = async (req, res) => {
+	const { limit = 5 } = req.query;
 	const topSelling = await Product.aggregate([
 		{
 			$match: {
@@ -214,7 +215,7 @@ export const getTopSellingCategory = async (req, res) => {
 		{
 			$sort: { totalSold: -1 },
 		},
-		{ $limit: 5 },
+		{ $limit: limit },
 	]);
 
 	res.status(StatusCodes.OK).json({
