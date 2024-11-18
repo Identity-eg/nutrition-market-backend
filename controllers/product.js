@@ -85,7 +85,7 @@ export const createProduct = async (req, res) => {
 	}
 };
 
-// #################### Get All Products ######################
+// #################### Get All Products for User & Super admin ######################
 export const getAllProducts = async (req, res) => {
 	let {
 		name,
@@ -117,7 +117,7 @@ export const getAllProducts = async (req, res) => {
 		req.headers['api-key'] &&
 		req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
 
-	// For Admins only Populate companny & dosage form & categories
+	// For Super admin only Populate companny & dosage form & categories
 	if (comingFromDashboard) {
 		aggregationPipeline = aggregationPipeline.concat([
 			{
@@ -313,8 +313,158 @@ export const getAllProducts = async (req, res) => {
 	});
 };
 
-// ######################################################
+// #################### Get All Products ######################
+export const getCompanyProducts = async (req, res) => {
+	const { id: companyId } = req.params;
+	let {
+		name,
+		sort,
+		page = 1,
+		limit = 12,
+		averageRating,
+		price,
+		category,
+		dosageForm,
+	} = req.query;
 
+	let skip = (Number(page) - 1) * Number(limit);
+
+	let aggregationPipeline = [
+		{
+			$match: {
+				company: mongoose.Types.ObjectId.createFromHexString(companyId),
+			},
+		},
+		{
+			$lookup: {
+				from: 'variants',
+				localField: 'variants',
+				foreignField: '_id',
+				as: 'variants',
+			},
+		},
+		{ $unwind: '$variants' },
+		{
+			$lookup: {
+				from: 'categories',
+				localField: 'category',
+				foreignField: '_id',
+				as: 'category',
+			},
+		},
+		{
+			$lookup: {
+				from: 'dosageforms',
+				localField: 'dosageForm',
+				foreignField: '_id',
+				as: 'dosageForm',
+			},
+		},
+		{ $unwind: '$dosageForm' },
+	];
+
+	if (name) {
+		const response = await fetch(`${process.env.ORIGIN_AI}/correct-query`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				query: name,
+			}),
+		});
+		const data = await response.json();
+		const nameQuery = { $regex: data.spell_corrected_text, $options: 'i' };
+
+		aggregationPipeline.push({
+			$match: {
+				$or: [
+					{ 'variants.name': nameQuery },
+					{ 'nutritionFacts.ingredients.name': nameQuery },
+					{ description: nameQuery },
+				],
+			},
+		});
+	}
+
+	if (averageRating) {
+		aggregationPipeline.push({
+			$match: { averageRating: { $gte: +averageRating } },
+		});
+	}
+
+	if (dosageForm) {
+		const query =
+			typeof dosageForm === 'string'
+				? dosageForm
+				: {
+						$in: dosageForm,
+					};
+
+		aggregationPipeline.push({
+			$match: { 'dosageForm.slug': query },
+		});
+	}
+
+	if (category) {
+		const query =
+			typeof category === 'string'
+				? category
+				: {
+						$in: category,
+					};
+		aggregationPipeline.push({
+			$match: { 'category.slug': query },
+		});
+	}
+
+	if (price) {
+		const [from, to] = price.split('-');
+		aggregationPipeline.push({
+			$match: {
+				'variants.price': {
+					...(from && { $gte: +from }),
+					...(to && { $lte: +to }),
+				},
+			},
+		});
+	}
+
+	if (sort) {
+		const sortMapper = {
+			price: 'variants.price',
+			createdAt: 'createdAt',
+			averageRating: 'averageRating',
+			name: 'variants.name',
+			sold: 'variants.sold',
+		};
+		const query = sort.startsWith('-')
+			? { [sortMapper[sort.substring(1)]]: -1 }
+			: { [sortMapper[sort]]: 1 };
+		aggregationPipeline.push({
+			$sort: query,
+		});
+	}
+
+	const countPipeline = [...aggregationPipeline];
+	countPipeline.push({ $count: 'totalCount' });
+	const countResult = await Product.aggregate(countPipeline).allowDiskUse(true);
+	const totalCount = countResult.length > 0 ? countResult[0].totalCount : 0;
+
+	aggregationPipeline.push({ $skip: skip }, { $limit: Number(limit) });
+
+	const products = await Product.aggregate(aggregationPipeline);
+
+	const lastPage = Math.ceil(totalCount / limit);
+	res.status(StatusCodes.OK).json({
+		totalCount,
+		currentPage: Number(page),
+		lastPage,
+		products,
+	});
+};
+
+// ######################################################
 export const getSingleProduct = async (req, res) => {
 	const { id: productId } = req.params;
 
@@ -349,7 +499,6 @@ export const getSingleProductReviews = async (req, res) => {
 };
 
 // ######################################################
-
 export const updateProduct = async (req, res) => {
 	const { id: productId } = req.params;
 
@@ -415,7 +564,6 @@ export const updateProduct = async (req, res) => {
 };
 
 // ######################################################
-
 export const deleteProduct = async (req, res) => {
 	const { id: productId } = req.params;
 
@@ -508,7 +656,6 @@ export const deleteProduct = async (req, res) => {
 };
 
 // ###########################################
-
 export const getSimilarProducts = async (req, res) => {
 	let { limit = 5 } = req.query;
 	const { id } = req.params;

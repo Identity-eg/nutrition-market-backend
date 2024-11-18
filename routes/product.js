@@ -6,14 +6,17 @@ import {
 import {
 	createProduct,
 	getAllProducts,
+	getCompanyProducts,
 	getSingleProduct,
 	updateProduct,
 	deleteProduct,
-	// uploadImage,
 	getSimilarProducts,
 	getSingleProductReviews,
 } from '../controllers/product.js';
-import { usersAllowedToAccessDashboard } from '../constants/index.js';
+import {
+	USER_ROLES,
+	usersAllowedToAccessDashboard,
+} from '../constants/index.js';
 
 const router = Router();
 
@@ -25,6 +28,13 @@ router
 		createProduct
 	)
 	.get(getAllProducts);
+
+router.get(
+	'/company/:id',
+	authenticateUser,
+	authorizePermissions(USER_ROLES.admin),
+	getCompanyProducts
+);
 
 router
 	.route('/:id')
