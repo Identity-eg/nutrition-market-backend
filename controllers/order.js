@@ -85,6 +85,18 @@ export const createOnlineOrder = async (req, res) => {
 			)
 		);
 
+		await Promise.all(
+			orderItems.map(item =>
+				User.findByIdAndUpdate(
+					req.user._id,
+					{
+						$addToSet: { purchasedProducts: item.product },
+					},
+					{ session }
+				)
+			)
+		);
+
 		await User.findByIdAndUpdate(
 			req.user._id,
 			{ $inc: { ordersCount: 1 } },
@@ -163,6 +175,18 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 					item.variant,
 					{
 						$inc: { sold: item.amount, quantity: -item.amount },
+					},
+					{ session }
+				)
+			)
+		);
+
+		await Promise.all(
+			cart.items.map(item =>
+				User.findByIdAndUpdate(
+					req.user._id,
+					{
+						$addToSet: { purchasedProducts: item.product },
 					},
 					{ session }
 				)
@@ -432,6 +456,12 @@ export const cancelOrder = async (req, res) => {
 	}
 	checkPermissions(req.user, order.user);
 
+	if (!order.status !== 'processing') {
+		throw new CustomError.BadRequestError(
+			`You don't allowed because order is ${order.status}, contact us on whatsapp`
+		);
+	}
+
 	const session = await mongoose.startSession();
 	try {
 		session.startTransaction();
@@ -455,6 +485,18 @@ export const cancelOrder = async (req, res) => {
 					item.variant,
 					{
 						$inc: { sold: -item.amount, quantity: item.amount },
+					},
+					{ session }
+				)
+			)
+		);
+
+		await Promise.all(
+			order.orderItems.map(item =>
+				User.findByIdAndUpdate(
+					req.user._id,
+					{
+						$pull: { purchasedProducts: item.product },
 					},
 					{ session }
 				)

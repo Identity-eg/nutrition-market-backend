@@ -65,6 +65,15 @@ const userSchema = new Schema(
 			default: false,
 		},
 		ordersCount: { type: Number, default: 0 },
+		purchasedProducts: {
+			type: [
+				{
+					type: ObjectId,
+					ref: 'Product',
+				},
+			],
+			default: [],
+		},
 		resetPasswordToken: String,
 		resetPasswordTokenExpiration: Date,
 	},
