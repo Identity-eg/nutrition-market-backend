@@ -44,7 +44,6 @@ const reviewSchema = new Schema(
 						},
 					},
 				]);
-				console.log('review aggregation result', result);
 
 				try {
 					await this.model('Product').findOneAndUpdate(

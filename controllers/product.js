@@ -175,7 +175,9 @@ export const getAllProducts = async (req, res) => {
 
 	if (averageRating) {
 		aggregationPipeline.push({
-			$match: { averageRating: { $gte: +averageRating } },
+			$match: {
+				averageRating: { $gte: +averageRating, $lte: +averageRating + 0.9 },
+			},
 		});
 	}
 

@@ -112,18 +112,14 @@ export const getMonthlySales = async (req, res) => {
 // ################# Top Selling Products #################
 export const getTopSellingProducts = async (req, res) => {
 	const companyId = req.user.company;
-	const period = req.query.period;
+	const { limit = 5 } = req.query;
 
 	const topSelling = await Product.aggregate([
-		{
-			$match: {
-				// paid: true,
-				createdAt: {
-					$gte: new Date(`${2024}-01-01`),
-					$lte: new Date(`${2024}-12-31`),
-				},
-			},
-		},
+		// {
+		// 	$match: {
+		// 		paid: true,
+		// 	},
+		// },
 		...(companyId
 			? [
 					{
@@ -155,8 +151,9 @@ export const getTopSellingProducts = async (req, res) => {
 		{
 			$sort: { totalSold: -1 },
 		},
-		{ $limit: 5 },
+		{ $limit: limit },
 	]);
+
 	res.status(StatusCodes.OK).json({
 		products: topSelling,
 	});
