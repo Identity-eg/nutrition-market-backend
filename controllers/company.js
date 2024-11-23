@@ -88,7 +88,10 @@ export const deleteCompany = async (req, res) => {
 // ################# Get Popular Companies #################
 export const getPopularCompanys = async (req, res) => {
 	const { limit = 5 } = req.query;
-	const companies = await Company.find().sort({ ordersCount: -1 }).limit(limit);
+
+	const companies = await Company.find()
+		.sort({ ordersCount: -1 })
+		.limit(+limit);
 
 	res.status(StatusCodes.OK).json({ companies });
 };

@@ -26,11 +26,6 @@ router.get(
 	authorizePermissions(...usersAllowedToAccessDashboard),
 	controllers.getTopSellingProducts
 );
-router.get(
-	'/top-selling-categories',
-	authenticateUser,
-	authorizePermissions(...usersAllowedToAccessDashboard),
-	controllers.getTopSellingCategory
-);
+router.get('/top-selling-categories', controllers.getTopSellingCategories);
 
 export default router;

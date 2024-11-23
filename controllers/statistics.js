@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
+
 import Order from '../models/order.js';
 import Product from '../models/product.js';
 
@@ -151,7 +152,7 @@ export const getTopSellingProducts = async (req, res) => {
 		{
 			$sort: { totalSold: -1 },
 		},
-		{ $limit: limit },
+		{ $limit: +limit },
 	]);
 
 	res.status(StatusCodes.OK).json({
@@ -160,18 +161,9 @@ export const getTopSellingProducts = async (req, res) => {
 };
 
 // ################# Top Selling Categories #################
-export const getTopSellingCategory = async (req, res) => {
+export const getTopSellingCategories = async (req, res) => {
 	const { limit = 5 } = req.query;
 	const topSelling = await Product.aggregate([
-		{
-			$match: {
-				// paid: true,
-				createdAt: {
-					$gte: new Date(`${2024}-01-01`),
-					$lte: new Date(`${2024}-12-31`),
-				},
-			},
-		},
 		{
 			$lookup: {
 				from: 'variants',
@@ -212,7 +204,7 @@ export const getTopSellingCategory = async (req, res) => {
 		{
 			$sort: { totalSold: -1 },
 		},
-		{ $limit: limit },
+		{ $limit: +limit },
 	]);
 
 	res.status(StatusCodes.OK).json({
