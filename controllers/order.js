@@ -221,7 +221,6 @@ export const getAllOrders = async (req, res) => {
 		paid,
 		paymentMethod,
 		period,
-		sort,
 		page = 1,
 		limit = 10,
 	} = req.query;
@@ -265,16 +264,16 @@ export const getAllOrders = async (req, res) => {
 	}
 
 	const orders = await Order.find(queryObject)
+		.sort('-createdAt')
+		.skip(skip)
+		.limit(limit)
 		.populate({
 			path: 'user',
 			select: 'firstName lastName email',
 			options: { _recursed: true },
-		})
-		.sort(sort)
-		.skip(skip)
-		.limit(limit);
+		});
 
-	const ordersCount = orders.length;
+	const ordersCount = await Order.countDocuments(queryObject);
 	const lastPage = Math.ceil(ordersCount / limit);
 	res.status(StatusCodes.OK).json({
 		totalCount: ordersCount,
@@ -315,7 +314,7 @@ export const getSingleOrder = async (req, res) => {
 export const getCurrentUserOrders = async (req, res) => {
 	let {
 		page = 1,
-		limit = 12,
+		limit = 10,
 		status,
 		paid,
 		paymentMethod,
@@ -349,12 +348,12 @@ export const getCurrentUserOrders = async (req, res) => {
 	}
 
 	const orders = await Order.find(queryObject)
-		// .sort(sort)
+		.sort('-createdAt')
 		.skip(skip)
 		.limit(limit)
 		.populate(['orderItems.variant', 'shippingAddress']);
 
-	const ordersCount = orders.length;
+	const ordersCount = await Order.countDocuments(queryObject);
 	const lastPage = Math.ceil(ordersCount / limit);
 	res.status(StatusCodes.OK).json({
 		totalCount: ordersCount,
@@ -368,7 +367,7 @@ export const getCurrentUserOrders = async (req, res) => {
 export const getCompanyOrders = async (req, res) => {
 	let {
 		page = 1,
-		limit = 12,
+		limit = 10,
 		status,
 		paid,
 		paymentMethod,
@@ -412,14 +411,14 @@ export const getCompanyOrders = async (req, res) => {
 	}
 
 	const orders = await Order.find(queryObject)
-		// .sort(sort)
+		.sort('-createdAt')
 		.skip(skip)
 		.limit(limit)
 		.populate({
 			path: 'user',
 		});
 
-	const ordersCount = orders.length;
+	const ordersCount = await Order.countDocuments(queryObject);
 	const lastPage = Math.ceil(ordersCount / limit);
 	res.status(StatusCodes.OK).json({
 		totalCount: ordersCount,
@@ -447,6 +446,7 @@ export const updateOrder = async (req, res) => {
 	res.status(StatusCodes.OK).json({ order });
 };
 
+// ############### Cancel Order #################
 export const cancelOrder = async (req, res) => {
 	const { id: orderId } = req.params;
 

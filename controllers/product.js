@@ -491,13 +491,22 @@ export const getSingleProduct = async (req, res) => {
 // ######################################################
 export const getSingleProductReviews = async (req, res) => {
 	const { id: productId } = req.params;
+	const { limit = 15, page = 1 } = req.query;
 	const reviews = await Review.find({ product: productId }).populate([
 		{
 			path: 'user',
 			select: 'firstName lastName purchasedProducts',
 		},
 	]);
-	res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
+
+	const reviewsCount = await Review.countDocuments({ product: productId });
+	const lastPage = Math.ceil(reviewsCount / limit);
+	res.status(StatusCodes.OK).json({
+		totalCount: reviewsCount,
+		currentPage: Number(page),
+		lastPage,
+		reviews,
+	});
 };
 
 // ######################################################
