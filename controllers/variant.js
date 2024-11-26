@@ -3,19 +3,41 @@ import Variant from '../models/variant.js';
 import CustomError from '../errors/index.js';
 import Cart from '../models/cart.js';
 import mongoose from 'mongoose';
+import Product from '../models/product.js';
 
 export const createVariant = async (req, res) => {
-	const variant = await Variant.create({
-		name: req.body.name,
-		unitCount: req.body.unitCount,
-		quantity: req.body.quantity,
-		price: req.body.price,
-		priceAfterDiscount: req.body.priceAfterDiscount,
-		flavor: req.body.flavor,
-		images: req.body.images,
-	});
+	const productId = req.body.product;
+	const product = await Product.findById(productId);
 
-	res.status(StatusCodes.CREATED).json({ variant });
+	if (!product) {
+		throw new CustomError.BadRequestError(
+			`No product found with id ${productId}`
+		);
+	}
+
+	const session = await mongoose.startSession();
+	try {
+		session.startTransaction();
+		req.body.name = `${product.name} ${req.body.unitCount} ${req.body.flavor}`;
+		const variant = new Variant(req.body);
+		await variant.save({ session });
+
+		await Product.findByIdAndUpdate(
+			productId,
+			{
+				$push: { variants: variant._id },
+			},
+			{ session }
+		);
+
+		await session.commitTransaction();
+		res.status(StatusCodes.OK).json({ msg: 'Variant created successfuly' });
+	} catch (error) {
+		await session.abortTransaction();
+		throw new CustomError.CustomAPIError(error.message);
+	} finally {
+		await session.endSession();
+	}
 };
 
 export const getAllVariants = async (req, res) => {
@@ -23,10 +45,19 @@ export const getAllVariants = async (req, res) => {
 	res.status(StatusCodes.OK).json({ variants });
 };
 
+export const getProductVariants = async (req, res) => {
+	const { productId } = req.params;
+	const variants = await Variant.find({ product: productId });
+
+	res.status(StatusCodes.OK).json({ variants });
+};
+
 export const getVariant = async (req, res) => {
 	const variant = await Variant.findById(req.params.variantId);
 	if (!variant) {
-		throw new CustomError.BadRequestError('No variant found with this id');
+		throw new CustomError.BadRequestError(
+			`No variant found with this id ${req.params.variantId}`
+		);
 	}
 	res.status(StatusCodes.OK).json({ variant });
 };

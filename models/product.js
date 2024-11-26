@@ -8,6 +8,16 @@ const { ObjectId } = Schema.Types;
 
 const productSchema = new Schema(
 	{
+		name: {
+			type: String,
+			required: [true, 'Please provide product name'],
+			maxlength: [100, 'Name can not be more than 100 characters'],
+		},
+		slug: {
+			type: String,
+			required: [true, 'Please provide product slug'],
+			unique: [true, 'Product name already exists'],
+		},
 		description: {
 			type: String,
 			required: [true, 'Please provide product description'],
@@ -53,10 +63,7 @@ const productSchema = new Schema(
 					ref: 'Variant',
 				},
 			],
-			validate: {
-				validator: v => Array.isArray(v) && v.length > 0,
-				message: 'Please provide at least 1 variant',
-			},
+			default: [],
 		},
 		directionOfUse: {
 			type: String,

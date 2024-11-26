@@ -17,6 +17,8 @@ router
 		controllers.createVariant
 	);
 
+router.route('/product/:productId').get(controllers.getProductVariants);
+
 router
 	.route('/:variantId')
 	.get(

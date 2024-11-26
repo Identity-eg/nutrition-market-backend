@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import fetch from 'node-fetch';
 import { StatusCodes } from 'http-status-codes';
+import slugify from 'slugify';
 
 import Product from '../models/product.js';
 import Review from '../models/review.js';
@@ -18,22 +19,15 @@ export const createProduct = async (req, res) => {
 		req.body.company = req.user.company;
 	}
 
+	req.body.name =
+		req.body.name.slice(0, 1).toLowerCase() + req.body.name.slice(1);
+	req.body.slug = slugify(req.body.name, { lower: true });
+
 	const session = await mongoose.startSession();
 	try {
 		session.startTransaction();
-
-		const variants = await Variant.create(req.body.variants, { session });
-
-		req.body.variants = variants.map(variant => variant._id);
 		const product = new Product(req.body);
 		await product.save({ session });
-
-		await Promise.all(
-			variants.map(variant => {
-				variant.product = product._id;
-				return variant.save({ session });
-			})
-		);
 
 		await Company.findByIdAndUpdate(
 			req.body.company,
@@ -63,18 +57,6 @@ export const createProduct = async (req, res) => {
 			)
 		);
 
-		await Promise.all(
-			req.body.variants.map(variant =>
-				Variant.findByIdAndUpdate(
-					variant,
-					{
-						product: product._id,
-					},
-					{ session }
-				)
-			)
-		);
-
 		await session.commitTransaction();
 		res.status(StatusCodes.CREATED).json({ product });
 	} catch (error) {
@@ -85,7 +67,7 @@ export const createProduct = async (req, res) => {
 	}
 };
 
-// #################### Get All Products for User & Super admin ######################
+// ################ Get All Products for User & Super admin #############
 export const getAllProducts = async (req, res) => {
 	let {
 		name,
@@ -101,6 +83,10 @@ export const getAllProducts = async (req, res) => {
 
 	let skip = (Number(page) - 1) * Number(limit);
 
+	const comingFromDashboard =
+		req.headers['api-key'] &&
+		req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
+
 	let aggregationPipeline = [
 		{
 			$lookup: {
@@ -110,12 +96,13 @@ export const getAllProducts = async (req, res) => {
 				as: 'variants',
 			},
 		},
-		{ $unwind: '$variants' },
+		{
+			$unwind: {
+				path: '$variants',
+				preserveNullAndEmptyArrays: comingFromDashboard,
+			},
+		},
 	];
-
-	const comingFromDashboard =
-		req.headers['api-key'] &&
-		req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
 
 	// For Super admin only Populate companny & dosage form & categories
 	if (comingFromDashboard) {
@@ -467,6 +454,27 @@ export const getCompanyProducts = async (req, res) => {
 };
 
 // ######################################################
+export const getSingleProductBySlug = async (req, res) => {
+	const { slug } = req.params;
+
+	const product = await Product.findOne({ slug }).populate([
+		{
+			path: 'variants',
+		},
+		{
+			path: 'category company dosageForm',
+			select: 'name slug',
+			options: { _recursed: true },
+		},
+	]);
+
+	if (!product) {
+		throw new CustomError.NotFoundError(`No product with slug : ${slug}`);
+	}
+
+	res.status(StatusCodes.OK).json({ product });
+};
+// ######################################################
 export const getSingleProduct = async (req, res) => {
 	const { id: productId } = req.params;
 
@@ -532,16 +540,20 @@ export const updateProduct = async (req, res) => {
 	session.startTransaction();
 
 	try {
-		if (req.body.variants) {
-			const variantsWithoutIds = req.body.variants
-				.filter(variant => !variant._id)
-				.map(variant => ({ ...variant, product: product._id }));
-
-			if (variantsWithoutIds) {
-				const variants = await Variant.create(variantsWithoutIds, { session });
-				req.body['$push'] = { variants: { $each: variants.map(v => v._id) } };
-			}
-			delete req.body.variants;
+		if (req.body.name) {
+			req.body.name =
+				req.body.name.slice(0, 1).toLowerCase() + req.body.name.slice(1);
+			req.body.slug = slugify(req.body.name, { lower: true });
+			const variants = await Variant.find({ product: product._id });
+			await Promise.all(
+				variants.map(variant => {
+					return Variant.findByIdAndUpdate(
+						variant._id,
+						{ name: `${req.body.name} ${variant.unitCount} ${variant.flavor}` },
+						{ session }
+					);
+				})
+			);
 		}
 
 		const updatedProduct = await Product.findOneAndUpdate(
