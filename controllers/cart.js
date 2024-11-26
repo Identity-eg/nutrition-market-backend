@@ -14,7 +14,17 @@ export const getCart = async (req, res) => {
 			{ $and: [{ user: { $exists: true } }, { user: user?._id }] },
 			{ $and: [{ user: { $exists: false } }, { _id: cartId }] },
 		],
-	}).populate({ path: 'items.variant' });
+	}).populate([
+		'items.variant',
+		{
+			path: 'coupon',
+			select: 'sale',
+			populate: {
+				path: 'company',
+				select: 'name',
+			},
+		},
+	]);
 
 	if (!cart) {
 		return res.status(StatusCodes.OK).json({

@@ -25,6 +25,7 @@ import imageRoutes from './routes/image.js';
 import paymentRoutes from './routes/payment.js';
 import addressRoutes from './routes/address.js';
 import statisticsRoutes from './routes/statistics.js';
+import couponRoutes from './routes/coupon.js';
 
 // import custom Middlewares
 import trim from './middlewares/trim.js';
@@ -80,6 +81,7 @@ app.use('/api/governorates', getGovernorates);
 app.use('/api/cities/:govId', getGovernorateCities);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/statistics', statisticsRoutes);
+app.use('/api/coupons', couponRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

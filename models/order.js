@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
+import { ORDER_STATUSES } from '../constants/index.js';
+import Coupon from './coupon.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -25,6 +27,9 @@ const SingleOrderItemSchema = new Schema({
 		type: Number,
 		required: [true, 'Please provide total product price'],
 	},
+	totalProductPriceAfterCoupon: {
+		type: Number,
+	},
 });
 
 const orderSchema = new Schema(
@@ -49,9 +54,10 @@ const orderSchema = new Schema(
 		},
 		status: {
 			type: String,
-			enum: ['processing', 'shipped', 'delivered', 'cancelled'],
-			default: 'processing',
+			enum: Object.values(ORDER_STATUSES),
+			default: ORDER_STATUSES.processing,
 		},
+		cancelReason: String,
 		shippingAddress: {
 			type: ObjectId,
 			ref: 'Address',
@@ -70,6 +76,10 @@ const orderSchema = new Schema(
 			type: Boolean,
 			required: true,
 		},
+		coupon: {
+			type: ObjectId,
+			ref: 'Coupon',
+		},
 		paymentMethod: {
 			type: {
 				id: String,
@@ -85,6 +95,14 @@ const orderSchema = new Schema(
 		timestamps: true,
 	}
 );
+
+orderSchema.pre('save', async function (next) {
+	if (!this.coupon) return next();
+	const coupon = await Coupon.findById(this.coupon);
+	coupon.orders.push(this._id);
+	coupon.save();
+	next();
+});
 
 const Order = model('Order', orderSchema);
 export default Order;

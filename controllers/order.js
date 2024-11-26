@@ -8,7 +8,7 @@ import Variant from '../models/variant.js';
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
 import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
-import { USER_ROLES } from '../constants/index.js';
+import { ORDER_STATUSES, USER_ROLES } from '../constants/index.js';
 import mongoose from 'mongoose';
 import Company from '../models/company.js';
 
@@ -22,6 +22,7 @@ export const createOnlineOrder = async (req, res) => {
 		req.body.intention?.extras?.creation_extras?.addressId;
 	const amount = req.body.intention?.intention_detail?.amount;
 	const orderItems = req.body.intention?.extras?.creation_extras?.cartItems;
+	const coupon = req.body.intention?.extras?.creation_extras?.coupon;
 	const shippingFee = 0;
 
 	if (!req.body.transaction?.success) {
@@ -45,6 +46,7 @@ export const createOnlineOrder = async (req, res) => {
 		subtotal: amount,
 		total: amount + shippingFee,
 		shippingFee,
+		coupon,
 		shippingAddress,
 		clientSecret,
 		paymentIntentId,
@@ -138,8 +140,9 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 		user: req.user._id,
 		orderItems: cart.items,
 		shippingAddress: addressId,
-		subtotal: cart.totalPrice,
-		total: cart.totalPrice + shippingFee,
+		subtotal: cart.totalPriceAfterCoupon ?? cart.totalPrice,
+		total: (cart.totalPriceAfterCoupon ?? cart.totalPrice) + shippingFee,
+		coupon: cart.coupon,
 		shippingFee,
 		paid: false,
 		paymentMethod: {
@@ -441,7 +444,7 @@ export const updateOrder = async (req, res) => {
 	checkPermissions(req.user, order.user);
 
 	order.paymentIntentId = paymentIntentId;
-	order.status = 'processing';
+	order.status = ORDER_STATUSES.processing;
 	await order.save();
 
 	res.status(StatusCodes.OK).json({ order });
@@ -456,7 +459,7 @@ export const cancelOrder = async (req, res) => {
 	}
 	checkPermissions(req.user, order.user);
 
-	if (!order.status !== 'processing') {
+	if (order.status !== ORDER_STATUSES.processing) {
 		throw new CustomError.BadRequestError(
 			`You don't allowed because order is ${order.status}, contact us on whatsapp`
 		);
@@ -511,7 +514,10 @@ export const cancelOrder = async (req, res) => {
 			{ session }
 		);
 
-		await order.deleteOne({ session });
+		order.status = ORDER_STATUSES.cancelled;
+		order.cancelReason = req.body.cancelReason;
+
+		await order.save({ session });
 		await session.commitTransaction();
 		res.status(StatusCodes.OK).json({ msg: 'Order cancelled successfully' });
 	} catch (error) {

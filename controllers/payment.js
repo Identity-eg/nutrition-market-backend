@@ -33,7 +33,7 @@ export const createPayment = async (req, res) => {
 			Authorization: `Bearer ${process.env.PAYMOB_SK}`,
 		},
 		body: JSON.stringify({
-			amount: convertToCent(cart.totalPrice),
+			amount: convertToCent(cart.totalPriceAfterCoupon ?? cart.totalPrice),
 			currency: 'EGP',
 			// notification_url: 'http://localhost:5000/api/orders',
 			redirection_url: `https://biovac-backend-production.up.railway.app/api/payment/after-payment?cartId=${cart._id}`,
@@ -67,6 +67,7 @@ export const createPayment = async (req, res) => {
 				userId: user._id,
 				cartItems: cart.items,
 				addressId: address._id,
+				coupon: cart.coupon,
 			},
 		}),
 	});
