@@ -8,11 +8,12 @@ const variantSchema = new Schema(
 		product: {
 			type: ObjectId,
 			ref: 'Company',
+			required: [true, 'Please provide relevant product'],
 		},
 		name: {
 			type: String,
-			required: [true, 'Please provide product name'],
 			maxlength: [100, 'Name can not be more than 100 characters'],
+			required: [true, 'Please provide variant name'],
 		},
 		unitCount: {
 			type: Number,

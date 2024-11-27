@@ -12,6 +12,7 @@ import {
 	deleteProduct,
 	getSimilarProducts,
 	getSingleProductReviews,
+	getSingleProductBySlug,
 } from '../controllers/product.js';
 import {
 	USER_ROLES,
@@ -35,6 +36,8 @@ router.get(
 	authorizePermissions(USER_ROLES.admin),
 	getCompanyProducts
 );
+
+router.get('/slug/:slug', getSingleProductBySlug);
 
 router
 	.route('/:id')
