@@ -67,6 +67,14 @@ export const updateVariant = async (req, res) => {
 	if (!variant) {
 		throw new CustomError.BadRequestError('No variant found with this id');
 	}
+
+	if (req.body.unitCount || req.body.flavor) {
+		const unitCount = req.body.unitCount || variant.unitCount;
+		const flavor = req.body.flavor || variant.flavor;
+		const product = await Product.findById(variant.product);
+		req.body.name = `${product.name} ${unitCount} ${flavor}`;
+	}
+
 	const updatedVariant = await Variant.findOneAndUpdate(
 		{ _id: req.params.variantId },
 		req.body,
@@ -75,7 +83,9 @@ export const updateVariant = async (req, res) => {
 			runValidators: true,
 		}
 	);
-	res.status(StatusCodes.OK).json({ variant: updatedVariant });
+	res
+		.status(StatusCodes.OK)
+		.json({ msg: 'Variant updated successfully', variant: updatedVariant });
 };
 
 export const deleteVariant = async (req, res) => {
