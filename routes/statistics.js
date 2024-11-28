@@ -15,6 +15,12 @@ router.get(
 	controllers.getTotalSales
 );
 router.get(
+	'/top-area-sales',
+	authenticateUser,
+	authorizePermissions(...usersAllowedToAccessDashboard),
+	controllers.getTopAreaSales
+);
+router.get(
 	'/monthly-sales/:year',
 	authenticateUser,
 	authorizePermissions(...usersAllowedToAccessDashboard),
