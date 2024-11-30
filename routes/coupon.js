@@ -21,6 +21,7 @@ router
 		controllers.createCoupon
 	);
 
-router.route('/apply-coupon').post(authenticateUser, controllers.applyCoupon);
+router.route('/apply-coupon').post(controllers.applyCoupon);
+router.route('/remove-coupon').post(controllers.removeCouponFromCart);
 
 export default router;

@@ -51,10 +51,12 @@ const cartSchema = new Schema(
 		totalPriceAfterCoupon: {
 			type: Number,
 		},
-		coupon: {
-			type: Schema.Types.ObjectId,
-			ref: 'Coupon',
-		},
+		coupons: [
+			{
+				type: Schema.Types.ObjectId,
+				ref: 'Coupon',
+			},
+		],
 		expireAt: {
 			type: Date,
 			default: dayjs().add(15, 'd'),
@@ -66,28 +68,55 @@ const cartSchema = new Schema(
 );
 
 cartSchema.pre('save', async function (next) {
-	if (!this.coupon) return;
+	// If no coupons or totalPriceAfterCoupon is already undefined, reset items and exit
+	if ((!this.coupons || !this.coupons.length) && this.totalPriceAfterCoupon) {
+		this.items.forEach(item => {
+			item.totalProductPriceAfterCoupon = undefined;
+		});
+		this.totalPriceAfterCoupon = undefined;
+		return next();
+	}
 
-	const coupon = await Coupon.findById(this.coupon);
+	if (!this.coupons.length) return next();
 
-	const cartItemsAfterCoupon = this.items.map(item => {
-		if (item.company.toString() === coupon.company.toString()) {
-			item.totalProductPriceAfterCoupon = Math.floor(
-				item.totalProductPrice - (item.totalProductPrice * coupon.sale) / 100
-			);
-		}
-		return item;
-	});
+	try {
+		const coupons = await Coupon.find({ _id: { $in: this.coupons } });
 
-	const totalPriceAfterCoupon = cartItemsAfterCoupon.reduce((acc, item) => {
-		acc = (item.totalProductPriceAfterCoupon ?? item.totalProductPrice) + acc;
-		return acc;
-	}, 0);
+		const couponMap = new Map(
+			coupons.map(coupon => [coupon.company.toString(), coupon.sale])
+		);
 
-	this.items = cartItemsAfterCoupon;
-	this.totalPriceAfterCoupon = totalPriceAfterCoupon;
+		const couponCompanies = new Set(
+			coupons.map(coupon => coupon.company.toString())
+		);
 
-	next();
+		let totalPriceAfterCoupon = 0;
+
+		this.items = this.items.map(item => {
+			const sale = couponMap.get(item.company.toString());
+			if (sale) {
+				item.totalProductPriceAfterCoupon = Math.floor(
+					item.totalProductPrice - (item.totalProductPrice * sale) / 100
+				);
+			} else if (
+				item.totalProductPriceAfterCoupon &&
+				!couponCompanies.has(item.company.toString())
+			) {
+				item.totalProductPriceAfterCoupon = undefined;
+			}
+			totalPriceAfterCoupon +=
+				item.totalProductPriceAfterCoupon ?? item.totalProductPrice;
+
+			return item;
+		});
+
+		this.totalPriceAfterCoupon = totalPriceAfterCoupon;
+
+		next();
+	} catch (error) {
+		console.error('Error in cart pre-save middleware:', error);
+		next(error);
+	}
 });
 
 const Cart = model('Cart', cartSchema);

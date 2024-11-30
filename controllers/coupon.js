@@ -3,13 +3,11 @@ import Coupon from '../models/coupon.js';
 import CustomError from '../errors/index.js';
 import Cart from '../models/cart.js';
 import dayjs from 'dayjs';
-import getCredFromCookies from '../utils/getCredFromCookies.js';
 
 export const createCoupon = async (req, res) => {
 	const { code, sale } = req.body;
-	const { user } = getCredFromCookies(req);
 
-	const company = user.company;
+	const company = req.user.company || req.body.company;
 
 	const coupon = await Coupon.create({
 		company,
@@ -21,9 +19,7 @@ export const createCoupon = async (req, res) => {
 };
 
 export const getCoupons = async (req, res) => {
-	const { user } = getCredFromCookies(req);
-
-	const company = user.company;
+	const company = req.user.company;
 
 	let queryObject = {};
 
@@ -48,18 +44,16 @@ export const applyCoupon = async (req, res) => {
 	const isCouponExpired = dayjs().date > coupon.expireAt;
 
 	if (isCouponExpired) {
-		throw new CustomError.BadRequestError(`Coupon is invalid`);
+		throw new CustomError.BadRequestError(`Coupon is expired`);
 	}
 
-	const companyId = coupon.company;
 	const cart = await Cart.findById(cartId);
 
 	if (!cart) {
 		throw new CustomError.NotFoundError(`No cart found`);
 	}
 
-	const isCouponEnteredBefore =
-		cart.coupon?.toString() === coupon._id?.toString();
+	const isCouponEnteredBefore = cart.coupons?.includes(coupon._id?.toString());
 
 	if (isCouponEnteredBefore) {
 		throw new CustomError.BadRequestError(
@@ -67,19 +61,29 @@ export const applyCoupon = async (req, res) => {
 		);
 	}
 
-	const isCartItemsRelatedToCoupon = cart.items.find(
-		item => item.company.toString() === companyId.toString()
-	);
-
-	if (!isCartItemsRelatedToCoupon) {
-		throw new CustomError.NotFoundError(`Coupon is invalid`);
-	}
-
-	cart.coupon = coupon._id;
+	cart.coupons.push(coupon._id);
 
 	await cart.save();
 
 	return res
 		.status(StatusCodes.OK)
 		.json({ msg: 'Coupon applied successfully!' });
+};
+
+export const removeCouponFromCart = async (req, res) => {
+	const { cartId, couponId } = req.body;
+
+	const cart = await Cart.findById(cartId);
+
+	if (!cart) {
+		throw new CustomError.NotFoundError(`No cart found`);
+	}
+
+	cart.coupons = cart.coupons.filter(cId => cId.toString() !== couponId);
+
+	await cart.save();
+
+	return res
+		.status(StatusCodes.OK)
+		.json({ msg: 'Coupon removed from cart successfully!' });
 };

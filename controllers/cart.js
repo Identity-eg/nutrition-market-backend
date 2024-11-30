@@ -17,8 +17,8 @@ export const getCart = async (req, res) => {
 	}).populate([
 		'items.variant',
 		{
-			path: 'coupon',
-			select: 'sale',
+			path: 'coupons',
+			select: 'sale code',
 			populate: {
 				path: 'company',
 				select: 'name',
