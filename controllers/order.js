@@ -504,7 +504,9 @@ export const cancelOrder = async (req, res) => {
 			{ session }
 		);
 
-		await order.deleteOne({ session });
+		order.status = ORDER_STATUSES.cancelled;
+
+		await order.save({ session });
 		await session.commitTransaction();
 		res.status(StatusCodes.OK).json({ msg: 'Order cancelled successfully' });
 	} catch (error) {
