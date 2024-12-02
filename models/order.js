@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
+import { ORDER_STATUSES } from '../constants/index.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -49,8 +50,8 @@ const orderSchema = new Schema(
 		},
 		status: {
 			type: String,
-			enum: ['processing', 'shipped', 'delivered', 'cancelled'],
-			default: 'processing',
+			enum: Object.values(ORDER_STATUSES),
+			default: ORDER_STATUSES.processing,
 		},
 		shippingAddress: {
 			type: ObjectId,

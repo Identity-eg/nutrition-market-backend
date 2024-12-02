@@ -26,3 +26,10 @@ export const usersAllowedToAccessDashboard = [
 	USER_ROLES.superAdmin,
 	USER_ROLES.admin,
 ];
+
+export const ORDER_STATUSES = {
+	processing: 'processing',
+	shipped: 'shipped',
+	delivered: 'delivered',
+	cancelled: 'cancelled',
+};

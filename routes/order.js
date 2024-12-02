@@ -35,6 +35,6 @@ router
 	.route('/:id')
 	.get(authenticateUser, orderCont.getSingleOrder)
 	.patch(authenticateUser, orderCont.updateOrder)
-	.delete(authenticateUser, orderCont.cancelOrder);
+	.post(authenticateUser, orderCont.cancelOrder);
 
 export default router;

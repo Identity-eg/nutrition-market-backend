@@ -8,7 +8,7 @@ import Variant from '../models/variant.js';
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
 import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
-import { USER_ROLES } from '../constants/index.js';
+import { ORDER_STATUSES, USER_ROLES } from '../constants/index.js';
 import mongoose from 'mongoose';
 import Company from '../models/company.js';
 
@@ -440,7 +440,7 @@ export const updateOrder = async (req, res) => {
 	checkPermissions(req.user, order.user);
 
 	order.paymentIntentId = paymentIntentId;
-	order.status = 'processing';
+	order.status = ORDER_STATUSES.processing;
 	await order.save();
 
 	res.status(StatusCodes.OK).json({ order });
@@ -456,7 +456,7 @@ export const cancelOrder = async (req, res) => {
 	}
 	checkPermissions(req.user, order.user);
 
-	if (!order.status !== 'processing') {
+	if (order.status !== ORDER_STATUSES.processing) {
 		throw new CustomError.BadRequestError(
 			`You don't allowed because order is ${order.status}, contact us on whatsapp`
 		);
@@ -491,22 +491,15 @@ export const cancelOrder = async (req, res) => {
 			)
 		);
 
-		await Promise.all(
-			order.orderItems.map(item =>
-				User.findByIdAndUpdate(
-					req.user._id,
-					{
-						$pull: { purchasedProducts: item.product },
-					},
-					{ session }
-				)
-			)
-		);
-
 		await User.findByIdAndUpdate(
 			order.user,
 			{
 				$inc: { ordersCount: -1 },
+				$pull: {
+					purchasedProducts: {
+						$in: order.orderItems.map(item => item.product),
+					},
+				},
 			},
 			{ session }
 		);
