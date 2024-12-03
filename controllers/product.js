@@ -768,3 +768,47 @@ export const getSimilarProducts = async (req, res) => {
 		products: similarProducts,
 	});
 };
+
+// ###########################################
+export const getOffers = async (req, res) => {
+	let { page = 1, limit = 12 } = req.query;
+
+	let skip = (Number(page) - 1) * Number(limit);
+
+	let aggregationPipeline = [
+		{
+			$lookup: {
+				from: 'variants',
+				localField: 'variants',
+				foreignField: '_id',
+				as: 'variants',
+			},
+		},
+		{
+			$unwind: {
+				path: '$variants',
+			},
+		},
+		{
+			$match: {
+				'variants.priceAfterDiscount': { $ne: undefined },
+			},
+		},
+	];
+	const countPipeline = [...aggregationPipeline];
+	countPipeline.push({ $count: 'totalCount' });
+	const countResult = await Product.aggregate(countPipeline).allowDiskUse(true);
+	const totalCount = countResult.length > 0 ? countResult[0].totalCount : 0;
+
+	aggregationPipeline.push({ $skip: skip }, { $limit: Number(limit) });
+
+	const offers = await Product.aggregate(aggregationPipeline);
+
+	const lastPage = Math.ceil(totalCount / limit);
+	res.status(StatusCodes.OK).json({
+		totalCount,
+		currentPage: Number(page),
+		lastPage,
+		offers,
+	});
+};
