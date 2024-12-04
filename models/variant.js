@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import Product from './product.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -37,6 +38,10 @@ const variantSchema = new Schema(
 		priceAfterDiscount: {
 			type: Number,
 		},
+		priceAfterSubscription: {
+			type: Number,
+		},
+
 		images: {
 			type: [
 				{
@@ -55,6 +60,18 @@ const variantSchema = new Schema(
 		timestamps: true,
 	}
 );
+
+variantSchema.pre('save', async function (next) {
+	if (this.priceAfterSubscription) return;
+
+	const product = await Product.findById(this.product);
+
+	if (!product.isSubscribable) return;
+
+	this.priceAfterSubscription =
+		this.price - (this.price * product.subscriptionDiscount) / 100;
+	next();
+});
 
 const Variant = model('Variant', variantSchema);
 export default Variant;

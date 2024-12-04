@@ -46,6 +46,14 @@ const productSchema = new Schema(
 			],
 			required: [true, 'Please provide product category'],
 		},
+		isSubscribable: Boolean,
+		subscriptionFrequency: {
+			type: [String],
+			enum: ['30 days', '60 days', '90 days'],
+		},
+		subscriptionDiscount: {
+			type: Number,
+		},
 		company: {
 			type: ObjectId,
 			ref: 'Company',
