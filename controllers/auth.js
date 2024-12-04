@@ -17,10 +17,13 @@ import {
 	generateCodeVerifier,
 	decodeIdToken,
 } from 'arctic';
+import getCredFromCookies from '../utils/getCredFromCookies.js';
+import { syncCart } from '../utils/syncCart.js';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
 	const { firstName, lastName, email, password, company } = req.body;
+	const { cartId } = getCredFromCookies(req);
 
 	const emailUser = await User.findOne({ email });
 
@@ -50,6 +53,8 @@ export const register = async (req, res) => {
 		expiresIn: '2d',
 	});
 
+	syncCart(cartId, user._id);
+
 	// Create secure cookies
 	res.cookie(
 		process.env.REFRESH_TOKEN_NAME,
@@ -63,6 +68,8 @@ export const register = async (req, res) => {
 // LOGIN USER ########################
 export const login = async (req, res) => {
 	const { email, password } = req.body;
+	const { cartId } = getCredFromCookies(req);
+
 	const comingFromDashboard =
 		req.headers['api-key'] &&
 		req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
@@ -104,6 +111,8 @@ export const login = async (req, res) => {
 	const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
 		expiresIn: '2d',
 	});
+
+	syncCart(cartId, user._id);
 
 	res.cookie(
 		comingFromDashboard
@@ -288,6 +297,7 @@ export const loginWithGoogle = async (req, res) => {
 
 export const loginWithGoogleCallback = async (req, res) => {
 	const { code } = req.query;
+	const { cartId } = getCredFromCookies(req);
 
 	try {
 		const token = await Providers.google.generateToken({ code });
@@ -318,6 +328,8 @@ export const loginWithGoogleCallback = async (req, res) => {
 		const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
 			expiresIn: '2d',
 		});
+
+		syncCart(cartId, user._id);
 
 		res.cookie(
 			process.env.REFRESH_TOKEN_NAME,
