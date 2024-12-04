@@ -168,6 +168,7 @@ export const syncCart = async (req, res) => {
 		);
 
 		userCart.items = newOne;
+		userCart.coupons = geustCart.coupons;
 		userCart.totalItems += geustCart.totalItems;
 		userCart.totalPrice += geustCart.totalPrice;
 
