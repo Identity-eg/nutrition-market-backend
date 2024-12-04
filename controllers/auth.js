@@ -6,7 +6,6 @@ import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
 import {
-	ACCESS_COOKIE_OPTIONS,
 	REFRESH_COOKIE_OPTIONS,
 	USER_ROLES,
 	usersAllowedToAccessDashboard,
@@ -54,6 +53,8 @@ export const register = async (req, res) => {
 	});
 
 	syncCart(cartId, user._id);
+
+	res.clearCookie('cart_id');
 
 	// Create secure cookies
 	res.cookie(
@@ -113,6 +114,8 @@ export const login = async (req, res) => {
 	});
 
 	syncCart(cartId, user._id);
+
+	res.clearCookie('cart_id');
 
 	res.cookie(
 		comingFromDashboard
@@ -322,24 +325,18 @@ export const loginWithGoogleCallback = async (req, res) => {
 			tokenUser = createTokenUser(user);
 		}
 
-		const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-			expiresIn: '1d',
-		});
 		const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
 			expiresIn: '2d',
 		});
 
 		syncCart(cartId, user._id);
 
+		res.clearCookie('cart_id');
+
 		res.cookie(
 			process.env.REFRESH_TOKEN_NAME,
 			refreshToken,
 			REFRESH_COOKIE_OPTIONS
-		);
-		res.cookie(
-			process.env.ACCESS_TOKEN_SECRET,
-			accessToken,
-			ACCESS_COOKIE_OPTIONS
 		);
 
 		res.redirect(301, 'http://localhost:3000');
