@@ -750,19 +750,14 @@ export const getSimilarProducts = async (req, res) => {
 				},
 			},
 		},
-
 		{
 			$unwind: '$combinedResults',
 		},
-
 		{
 			$group: {
 				_id: '$combinedResults._id',
 				product: { $first: '$combinedResults' },
 			},
-		},
-		{
-			$limit: +limit,
 		},
 		{
 			$replaceRoot: {
@@ -771,13 +766,16 @@ export const getSimilarProducts = async (req, res) => {
 		},
 		{
 			$lookup: {
-				from: 'variants', // Replace with your actual collection name
-				localField: 'variants', // Assuming there's a brand field
+				from: 'variants',
+				localField: 'variants',
 				foreignField: '_id',
 				as: 'variants',
 			},
 		},
 		{ $unwind: '$variants' },
+		{
+			$limit: +limit,
+		},
 	]);
 
 	return res.json({
