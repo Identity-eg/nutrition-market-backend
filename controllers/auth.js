@@ -6,10 +6,17 @@ import CustomError from '../errors/index.js';
 import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
 import {
+	ACCESS_COOKIE_OPTIONS,
 	REFRESH_COOKIE_OPTIONS,
 	USER_ROLES,
 	usersAllowedToAccessDashboard,
 } from '../constants/index.js';
+import {
+	Google,
+	generateState,
+	generateCodeVerifier,
+	decodeIdToken,
+} from 'arctic';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
@@ -68,6 +75,9 @@ export const login = async (req, res) => {
 
 	if (!user) {
 		throw new CustomError.UnauthenticatedError('Invalid Credentials');
+	}
+	if (user.googleId) {
+		throw new CustomError.BadRequestError('This email is already exist');
 	}
 
 	const isPasswordMatches = await user.comparePassword(password);
@@ -245,4 +255,84 @@ export const resetPassword = async (req, res) => {
 
 	// res.status(StatusCodes.OK).json({ user: tokenUser, accessToken });
 	res.status(StatusCodes.OK).json({ msg: 'Password updated succussfully' });
+};
+
+const Providers = {
+	google: {
+		codeVerifier: generateCodeVerifier(),
+		generateUrl() {
+			const state = generateState();
+			const scopes = ['openid', 'profile'];
+			const url = new Google(
+				process.env.GOOGLE_CLIENT_ID,
+				process.env.GOOGLE_CLIENT_SECRET,
+				process.env.GOOGLE_REDIRECT_URI
+			).createAuthorizationURL(state, this.codeVerifier, scopes);
+			url.searchParams.set('access_type', 'offline');
+			return url;
+		},
+		async generateToken({ code }) {
+			return new Google(
+				process.env.GOOGLE_CLIENT_ID,
+				process.env.GOOGLE_CLIENT_SECRET,
+				process.env.GOOGLE_REDIRECT_URI
+			).validateAuthorizationCode(code, this.codeVerifier);
+		},
+	},
+};
+
+export const loginWithGoogle = async (req, res) => {
+	const url = Providers.google.generateUrl();
+	res.status(StatusCodes.OK).json({ url: url.href });
+};
+
+export const loginWithGoogleCallback = async (req, res) => {
+	const { code } = req.query;
+
+	try {
+		const token = await Providers.google.generateToken({ code });
+		const idToken = token.idToken();
+		const payload = decodeIdToken(idToken);
+		const { email, given_name, family_name, sub: googleId } = payload;
+
+		const user = await User.findOne({ googleId });
+
+		let tokenUser;
+
+		if (user) {
+			tokenUser = createTokenUser(user);
+		} else {
+			const userToBeCreated = {
+				googleId: googleId,
+				email,
+				firstName: given_name,
+				lastName: family_name,
+			};
+			const user = await User.create(userToBeCreated);
+			tokenUser = createTokenUser(user);
+		}
+
+		const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
+			expiresIn: '1d',
+		});
+		const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
+			expiresIn: '2d',
+		});
+
+		res.cookie(
+			process.env.REFRESH_TOKEN_NAME,
+			refreshToken,
+			REFRESH_COOKIE_OPTIONS
+		);
+		res.cookie(
+			process.env.ACCESS_TOKEN_SECRET,
+			accessToken,
+			ACCESS_COOKIE_OPTIONS
+		);
+
+		res.redirect(301, 'http://localhost:3000');
+	} catch (error) {
+		console.error('Error during Google authentication', error);
+		res.status(500).send('Authentication failed');
+	}
 };

@@ -10,6 +10,7 @@ const { isEmail } = pkg;
 
 const userSchema = new Schema(
 	{
+		googleId: String,
 		firstName: {
 			type: String,
 			required: [true, 'Please provide a first name'],
@@ -42,7 +43,12 @@ const userSchema = new Schema(
 		},
 		password: {
 			type: String,
-			required: [true, 'Please provide a password'],
+			required: [
+				function () {
+					return !this.googleId; // Password is required only if googleId is not provided
+				},
+				'Please provide a password',
+			],
 			minlength: [6, 'Password cannot be lower than 6 character'],
 		},
 		role: {
