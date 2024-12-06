@@ -785,11 +785,19 @@ export const getSimilarProducts = async (req, res) => {
 
 // ###########################################
 export const getOffers = async (req, res) => {
-	let { page = 1, limit = 12 } = req.query;
+	let {
+		page = 1,
+		limit = 12,
+		averageRating,
+		price,
+		company,
+		category,
+		dosageForm,
+	} = req.query;
 
 	let skip = (Number(page) - 1) * Number(limit);
 
-	let aggregationPipeline = [
+	let basePipeline = [
 		{
 			$lookup: {
 				from: 'variants',
@@ -809,14 +817,115 @@ export const getOffers = async (req, res) => {
 			},
 		},
 	];
-	const countPipeline = [...aggregationPipeline];
+
+	if (averageRating) {
+		basePipeline.push({
+			$match: {
+				averageRating: { $gte: +averageRating, $lte: +averageRating + 0.9 },
+			},
+		});
+	}
+
+	if (company) {
+		const query =
+			typeof company === 'string'
+				? company
+				: {
+						$in: company,
+					};
+
+		basePipeline.push(
+			{
+				$lookup: {
+					from: 'companies',
+					localField: 'company',
+					foreignField: '_id',
+					as: 'company',
+				},
+			},
+			{ $unwind: '$company' },
+			{
+				$match: { 'company.slug': query },
+			}
+		);
+	}
+
+	if (dosageForm) {
+		const query =
+			typeof dosageForm === 'string'
+				? dosageForm
+				: {
+						$in: dosageForm,
+					};
+
+		basePipeline.push(
+			{
+				$lookup: {
+					from: 'dosageforms',
+					localField: 'dosageForm',
+					foreignField: '_id',
+					as: 'dosageForm',
+				},
+			},
+			{ $unwind: '$dosageForm' },
+			{
+				$match: { 'dosageForm.slug': query },
+			}
+		);
+	}
+
+	if (category) {
+		const query =
+			typeof category === 'string'
+				? category
+				: {
+						$in: category,
+					};
+
+		basePipeline.push(
+			{
+				$lookup: {
+					from: 'categories',
+					localField: 'category',
+					foreignField: '_id',
+					as: 'category',
+				},
+			},
+			{
+				$match: { 'category.slug': query },
+			}
+		);
+	}
+
+	if (price) {
+		const [from, to] = price.split('-');
+		basePipeline.push(
+			{
+				$set: {
+					variantPrice: {
+						$ifNull: ['$variants.priceAfterDiscount', '$variants.price'],
+					},
+				},
+			},
+			{
+				$match: {
+					variantPrice: {
+						...(from && { $gte: +from }),
+						...(to && { $lte: +to }),
+					},
+				},
+			}
+		);
+	}
+
+	const countPipeline = [...basePipeline];
 	countPipeline.push({ $count: 'totalCount' });
 	const countResult = await Product.aggregate(countPipeline).allowDiskUse(true);
 	const totalCount = countResult.length > 0 ? countResult[0].totalCount : 0;
 
-	aggregationPipeline.push({ $skip: skip }, { $limit: Number(limit) });
+	basePipeline.push({ $skip: skip }, { $limit: Number(limit) });
 
-	const offers = await Product.aggregate(aggregationPipeline);
+	const offers = await Product.aggregate(basePipeline);
 
 	const lastPage = Math.ceil(totalCount / limit);
 	res.status(StatusCodes.OK).json({
