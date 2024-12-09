@@ -9,6 +9,12 @@ router
 	.post(authenticateUser, controllers.createReview)
 	.get(controllers.getAllReviews);
 
+router.get(
+	'/:productId/details',
+	authenticateUser,
+	controllers.getProductReviewsDetails
+);
+
 router
 	.route('/:id')
 	.get(controllers.getSingleReview)

@@ -318,7 +318,7 @@ export const getAllProducts = async (req, res) => {
 	});
 };
 
-// #################### Get All Products ######################
+// #################### Get Products for admins ######################
 export const getCompanyProducts = async (req, res) => {
 	const { id: companyId } = req.params;
 	let {
