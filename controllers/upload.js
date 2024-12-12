@@ -1,5 +1,4 @@
 import path from 'path';
-import cloudinary from 'cloudinary';
 import { StatusCodes } from 'http-status-codes';
 
 import CustomError from '../errors/index.js';
