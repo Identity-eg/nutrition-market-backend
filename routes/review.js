@@ -9,11 +9,7 @@ router
 	.post(authenticateUser, controllers.createReview)
 	.get(controllers.getAllReviews);
 
-router.get(
-	'/:productId/details',
-	authenticateUser,
-	controllers.getProductReviewsDetails
-);
+router.get('/:productId/details', controllers.getProductReviewsDetails);
 
 router
 	.route('/:id')
