@@ -3,6 +3,6 @@ export const PAYMENT_METHODS = {
 		id: '1',
 		name: 'cashOnDelivery',
 	},
-	3922403: { id: '3922403', name: 'masterCard' },
+	4827863: { id: '4827863', name: 'masterCard' },
 	3925355: { id: '3925355', name: 'wallet' },
 };

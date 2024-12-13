@@ -11,26 +11,38 @@ import { PAYMENT_METHODS } from '../constants/paymentMethods.js';
 import { ORDER_STATUSES, USER_ROLES } from '../constants/index.js';
 import mongoose from 'mongoose';
 import Company from '../models/company.js';
+import { convertToPound } from '../utils/convertToPound.js';
 
 // CREATE ONLINE ORDER ################
 export const createOnlineOrder = async (req, res) => {
-	const user =
-		req.body.intention?.extras?.creation_extras?.userId || req.user._id;
-	const paymentIntentId = req.body.intention?.id;
-	const clientSecret = req.body.intention?.client_secret;
-	const shippingAddress =
-		req.body.intention?.extras?.creation_extras?.addressId;
-	const amount = req.body.intention?.intention_detail?.amount;
-	const orderItems = req.body.intention?.extras?.creation_extras?.cartItems;
+	const { obj } = req.body;
+
+	const user = obj.payment_key_claims?.extra?.userId;
+	const shippingAddress = obj.payment_key_claims?.extra?.addressId;
+	const cartId = obj.payment_key_claims?.extra?.cartId;
+
+	const paymentIntentId =
+		obj.payment_key_claims.intention?.next_payment_intention;
+	const amount = convertToPound(obj?.amount_cents);
+	const paymentMethodId = obj?.integration_id;
+	const isSuccess = obj?.success;
+	const paymobOrderId = obj?.order.id;
+
 	const shippingFee = 0;
 
-	if (!req.body.transaction?.success) {
+	const cart = await Cart.findById(cartId);
+
+	if (!cart) {
+		throw new CustomError.BadRequestError('Cart does not exist');
+	}
+
+	if (!isSuccess) {
 		throw new CustomError.BadRequestError(
 			'Something went wrong while creating your order'
 		);
 	}
 
-	for (const item of orderItems) {
+	for (const item of cart.items) {
 		const variant = await Variant.findById(item.variant);
 		const isExceedQuantity = variant?.quantity < (item.amount ?? 0);
 		if (isExceedQuantity)
@@ -41,17 +53,15 @@ export const createOnlineOrder = async (req, res) => {
 
 	const newOrder = {
 		user,
-		orderItems,
+		orderItems: cart.items,
 		subtotal: amount,
 		total: amount + shippingFee,
 		shippingFee,
+		paymobOrderId,
 		shippingAddress,
-		clientSecret,
 		paymentIntentId,
 		paid: true,
-		paymentMethod:
-			PAYMENT_METHODS[req.body.intention.payment_methods[0].integration_id] ??
-			PAYMENT_METHODS.cashOnDelivery,
+		paymentMethod: PAYMENT_METHODS[paymentMethodId],
 	};
 
 	const session = await mongoose.startSession();
@@ -60,7 +70,7 @@ export const createOnlineOrder = async (req, res) => {
 		const order = new Order(newOrder);
 		await order.save({ session });
 
-		const uniqueCompanySet = new Set(orderItems.map(item => item.company));
+		const uniqueCompanySet = new Set(cart.items.map(item => item.company));
 		const uniqueCompanyArray = [...uniqueCompanySet];
 
 		await Promise.all(
@@ -74,7 +84,7 @@ export const createOnlineOrder = async (req, res) => {
 		);
 
 		await Promise.all(
-			orderItems.map(item =>
+			cart.items.map(item =>
 				Variant.findByIdAndUpdate(
 					item.variant,
 					{
@@ -86,9 +96,9 @@ export const createOnlineOrder = async (req, res) => {
 		);
 
 		await Promise.all(
-			orderItems.map(item =>
+			cart.items.map(item =>
 				User.findByIdAndUpdate(
-					req.user._id,
+					user,
 					{
 						$addToSet: { purchasedProducts: item.product },
 					},
@@ -98,11 +108,11 @@ export const createOnlineOrder = async (req, res) => {
 		);
 
 		await User.findByIdAndUpdate(
-			req.user._id,
+			user,
 			{ $inc: { ordersCount: 1 } },
 			{ session }
 		);
-		// await cart.deleteOne({ session });
+		await cart.deleteOne({ session });
 		await session.commitTransaction();
 		res.status(StatusCodes.CREATED).json({ order });
 	} catch (error) {
