@@ -17,8 +17,20 @@ const companySchema = new Schema(
 			type: String,
 			required: true,
 		},
-		logo: String,
-		cover: String,
+		logo: {
+			type: {
+				url: String,
+				name: String,
+				size: Number,
+			},
+		},
+		cover: {
+			type: {
+				url: String,
+				name: String,
+				size: Number,
+			},
+		},
 		ordersCount: { type: Number, default: 0 },
 		productsCount: { type: Number, default: 0 },
 	},

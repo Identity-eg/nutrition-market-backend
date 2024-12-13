@@ -6,6 +6,8 @@ import {
 	refresh,
 	forgotPassword,
 	resetPassword,
+	loginWithGoogle,
+	loginWithGoogleCallback,
 } from '../controllers/auth.js';
 import loginLimiter from '../middlewares/loginLimiter.js';
 
@@ -18,5 +20,7 @@ router.get('/logout', logout);
 
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:token', resetPassword);
+router.get('/google', loginWithGoogle);
+router.get('/google/callback', loginWithGoogleCallback);
 
 export default router;

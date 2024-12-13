@@ -1,6 +1,8 @@
+import mongoose from 'mongoose';
+import { StatusCodes } from 'http-status-codes';
+
 import Review from '../models/review.js';
 import Product from '../models/product.js';
-import { StatusCodes } from 'http-status-codes';
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
 
@@ -106,4 +108,35 @@ export const deleteReview = async (req, res) => {
 	checkPermissions(req.user, review.user);
 	await review.deleteOne();
 	res.status(StatusCodes.OK).json({ msg: 'Success! Review removed' });
+};
+
+// ################# Get Reviews Details #################
+export const getProductReviewsDetails = async (req, res) => {
+	const { productId } = req.params;
+	const result = await Review.aggregate([
+		{
+			$match: {
+				product: mongoose.Types.ObjectId.createFromHexString(productId),
+			},
+		},
+		{
+			$group: {
+				_id: '$rating',
+				count: { $sum: 1 },
+			},
+		},
+	]);
+	const ratings = [1, 2, 3, 4, 5];
+	const ratingCounts = {};
+
+	result.forEach(doc => {
+		ratingCounts[doc._id] = doc.count;
+	});
+
+	ratings.forEach(rating => {
+		if (!Object.prototype.hasOwnProperty.call(ratingCounts, rating)) {
+			ratingCounts[rating] = 0;
+		}
+	});
+	res.status(StatusCodes.OK).json({ ratingCounts });
 };

@@ -76,6 +76,10 @@ const orderSchema = new Schema(
 			type: Boolean,
 			required: true,
 		},
+		paymobOrderId: {
+			type: String,
+			unique: true
+		},
 		coupon: {
 			type: ObjectId,
 			ref: 'Coupon',

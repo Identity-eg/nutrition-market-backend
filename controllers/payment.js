@@ -5,10 +5,8 @@ import CustomError from '../errors/index.js';
 import crypto from 'crypto';
 import User from '../models/user.js';
 import Address from '../models/address.js';
-
-const convertToCent = price => {
-	return price * 100;
-};
+import { convertToCent } from '../utils/convertToPound.js';
+import Order from '../models/order.js';
 
 export const createPayment = async (req, res) => {
 	const address = await Address.findById(req.body.addressId);
@@ -35,8 +33,9 @@ export const createPayment = async (req, res) => {
 		body: JSON.stringify({
 			amount: convertToCent(cart.totalPriceAfterCoupon ?? cart.totalPrice),
 			currency: 'EGP',
-			// notification_url: 'http://localhost:5000/api/orders',
-			redirection_url: `https://biovac-backend-production.up.railway.app/api/payment/after-payment?cartId=${cart._id}`,
+			notification_url:
+				'https://d667-156-223-222-158.ngrok-free.app/api/orders',
+			redirection_url: `https://d667-156-223-222-158.ngrok-free.app/api/payment/after-payment`,
 			payment_methods: [+req.body.paymentMethodId],
 
 			items: cart.items.map(item => ({
@@ -65,7 +64,7 @@ export const createPayment = async (req, res) => {
 			},
 			extras: {
 				userId: user._id,
-				cartItems: cart.items,
+				cartId: cart._id,
 				addressId: address._id,
 				coupon: cart.coupon,
 			},
@@ -84,9 +83,7 @@ export const afterPayment = async (req, res) => {
 	const source_data_pan = req.query['source_data.pan'];
 	const source_data_sub_type = req.query['source_data.sub_type'];
 	const source_data_type = req.query['source_data.type'];
-	const cartId = req.query.cartId;
-	console.log({ query: req.query, body: req.body });
-
+	
 	const {
 		amount_cents,
 		created_at,
@@ -130,16 +127,19 @@ export const afterPayment = async (req, res) => {
 		success;
 
 	const hash = crypto
-		.createHmac('sha512', 'CE16D7071DC5DD4F590DA061DECEBA63')
+		.createHmac('sha512', 'FCCFB4AE7442AA05AB2806A5DC19AEC6')
 		.update(concatenateString)
 		.digest('hex');
 
-	await Cart.findByIdAndDelete(cartId);
+	const paidOrder = await Order.findOne({ paymobOrderId: order });
 
 	if (hash === req.query.hmac) {
-		res.cookie('encpl', JSON.stringify({ success, orderId: id }), {
-			maxAge: 1 * 60 * 1000,
-		});
-		res.redirect(301, `http://localhost:3000/orders/status`);
+		// res.cookie('encpl', JSON.stringify({ success, orderId: id }), {
+		// 	maxAge: 1 * 60 * 1000,
+		// });
+		res.redirect(
+			301,
+			`http://localhost:3000/orders/status?orderId=${paidOrder._id}`
+		);
 	}
 };

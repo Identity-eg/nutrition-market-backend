@@ -3,17 +3,7 @@ import {
 	authenticateUser,
 	authorizePermissions,
 } from '../middlewares/full-auth.js';
-import {
-	createProduct,
-	getAllProducts,
-	getCompanyProducts,
-	getSingleProduct,
-	updateProduct,
-	deleteProduct,
-	getSimilarProducts,
-	getSingleProductReviews,
-	getSingleProductBySlug,
-} from '../controllers/product.js';
+import * as controllers from '../controllers/product.js';
 import {
 	USER_ROLES,
 	usersAllowedToAccessDashboard,
@@ -26,32 +16,34 @@ router
 	.post(
 		authenticateUser,
 		authorizePermissions(...usersAllowedToAccessDashboard),
-		createProduct
+		controllers.createProduct
 	)
-	.get(getAllProducts);
+	.get(controllers.getAllProducts);
+
+router.get('/offers', controllers.getOffers);
 
 router.get(
 	'/company/:id',
 	authenticateUser,
 	authorizePermissions(USER_ROLES.admin),
-	getCompanyProducts
+	controllers.getCompanyProducts
 );
 
-router.get('/slug/:slug', getSingleProductBySlug);
+router.get('/slug/:slug', controllers.getSingleProductBySlug);
 
 router
 	.route('/:id')
-	.get(getSingleProduct)
+	.get(controllers.getSingleProduct)
 	.patch(
 		[authenticateUser, authorizePermissions(...usersAllowedToAccessDashboard)],
-		updateProduct
+		controllers.updateProduct
 	)
 	.delete(
 		[authenticateUser, authorizePermissions(...usersAllowedToAccessDashboard)],
-		deleteProduct
+		controllers.deleteProduct
 	);
 
-router.route('/:id/reviews').get(getSingleProductReviews);
-router.route('/:id/similar').get(getSimilarProducts);
+router.route('/:id/reviews').get(controllers.getSingleProductReviews);
+router.route('/:id/similar').get(controllers.getSimilarProducts);
 
 export default router;

@@ -48,7 +48,7 @@ export const getTotalSales = async (req, res) => {
 	const averageOrderValue = companyOrders.length ? totalSales / totalOrders : 0;
 	const recentSales = companyOrders.slice(0, 5);
 
-	res.status(StatusCodes.CREATED).json({
+	res.status(StatusCodes.OK).json({
 		totalSales,
 		totalProductsSold,
 		totalOrders,
@@ -105,7 +105,7 @@ export const getMonthlySales = async (req, res) => {
 		},
 		{ $sort: { month: 1 } },
 	]);
-	res.status(StatusCodes.CREATED).json({
+	res.status(StatusCodes.OK).json({
 		monthlySales,
 	});
 };
@@ -209,5 +209,70 @@ export const getTopSellingCategories = async (req, res) => {
 
 	res.status(StatusCodes.OK).json({
 		categories: topSelling,
+	});
+};
+
+// ################# Top Selling Categories #################
+export const getTopAreaSales = async (req, res) => {
+	const companyId = req.user.company;
+	const period = req.query.period;
+
+	const fromDate = period?.from ? new Date(period.from) : undefined;
+	const toDate = period?.to ? new Date(period.to) : undefined;
+
+	const areaSales = await Order.aggregate([
+		{
+			$match: {
+				// paid: true,
+				...(fromDate && {
+					createdAt: {
+						$gte: fromDate,
+						...(toDate && { $lte: toDate.setHours(23, 59, 59, 999) }),
+					},
+				}),
+			},
+		},
+		// Difference between Admin and Super Admin
+		...(companyId
+			? [
+					{
+						$match: {
+							'orderItems.company':
+								mongoose.Types.ObjectId.createFromHexString(companyId),
+						},
+					},
+				]
+			: []),
+		{
+			$lookup: {
+				from: 'addresses',
+				localField: 'shippingAddress',
+				foreignField: '_id',
+				as: 'shippingAddress',
+			},
+		},
+		{
+			$unwind: '$shippingAddress',
+		},
+		{
+			$group: {
+				_id: '$shippingAddress.governorate',
+				totalOrders: { $sum: 1 },
+			},
+		},
+		{
+			$sort: { totalOrders: -1 },
+		},
+		{
+			$project: {
+				_id: 0,
+				area: '$_id',
+				totalOrders: 1,
+			},
+		},
+	]);
+
+	res.status(StatusCodes.OK).json({
+		areaSales,
 	});
 };

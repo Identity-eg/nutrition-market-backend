@@ -24,6 +24,7 @@ export const getCart = async (req, res) => {
 				select: 'name',
 			},
 		},
+		{ path: 'items.product', select: 'slug' },
 	]);
 
 	if (!cart) {
@@ -139,47 +140,6 @@ export const addItemToCart = async (req, res) => {
 };
 
 // #################### Add To Cart ####################
-export const syncCart = async (req, res) => {
-	const { _id: userId } = req.user;
-
-	const { cartId } = getCredFromCookies(req);
-	const geustCart = await Cart.findById(cartId);
-	const userCart = await Cart.findOne({ user: userId });
-
-	if (geustCart && userCart) {
-		const arr = [...userCart.items, ...geustCart.items];
-
-		const newOne = Object.values(
-			arr.reduce((acc, item) => {
-				if (!acc[item.product])
-					acc[item.product] = {
-						product: item.product,
-						variant: item.variant,
-						company: item.company,
-						_id: item._id,
-						amount: 0,
-						totalProductPrice: 0,
-					};
-
-				acc[item.product].amount += item.amount;
-				acc[item.product].totalProductPrice += item.totalProductPrice;
-				return acc;
-			}, {})
-		);
-
-		userCart.items = newOne;
-		userCart.coupons = geustCart.coupons;
-		userCart.totalItems += geustCart.totalItems;
-		userCart.totalPrice += geustCart.totalPrice;
-
-		await userCart.save();
-		await geustCart.deleteOne();
-	} else if (geustCart) {
-		geustCart.user = userId;
-		await geustCart.save();
-	}
-	return res.status(StatusCodes.CREATED).json({ msg: 'Sync successfully' });
-};
 
 // ################# Increase By Amount #################
 export const increaseByone = async (req, res) => {
