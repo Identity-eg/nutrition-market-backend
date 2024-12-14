@@ -3,13 +3,16 @@ import { StatusCodes } from 'http-status-codes';
 
 import Order from '../models/order.js';
 import Product from '../models/product.js';
+import { ORDER_STATUSES } from '../constants/index.js';
 
 // ################# Total Sales #################
 export const getTotalSales = async (req, res) => {
 	const companyId = req.user.company;
 	const period = req.query.period;
 
-	let queryObject = {};
+	let queryObject = {
+		status: { $ne: ORDER_STATUSES.cancelled },
+	};
 
 	if (companyId) {
 		queryObject['orderItems.company'] = companyId;
@@ -66,6 +69,9 @@ export const getMonthlySales = async (req, res) => {
 		{
 			$match: {
 				// paid: true,
+				status: {
+					$ne: ORDER_STATUSES.cancelled,
+				},
 				createdAt: {
 					$gte: new Date(`${year}-01-01`),
 					$lte: new Date(`${year}-12-31`),
@@ -116,11 +122,6 @@ export const getTopSellingProducts = async (req, res) => {
 	const { limit = 5 } = req.query;
 
 	const topSelling = await Product.aggregate([
-		// {
-		// 	$match: {
-		// 		paid: true,
-		// 	},
-		// },
 		...(companyId
 			? [
 					{
@@ -224,6 +225,7 @@ export const getTopAreaSales = async (req, res) => {
 		{
 			$match: {
 				// paid: true,
+				status: { $ne: ORDER_STATUSES.cancelled },
 				...(fromDate && {
 					createdAt: {
 						$gte: fromDate,
