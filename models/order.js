@@ -78,7 +78,7 @@ const orderSchema = new Schema(
 		},
 		paymobOrderId: {
 			type: String,
-			unique: true,
+			index: { unique: true, sparse: true }
 		},
 		coupons: [
 			{
@@ -103,7 +103,6 @@ const orderSchema = new Schema(
 );
 
 orderSchema.pre('save', async function (next) {
-	console.log({ thisC: this.coupons });
 	if (!this.coupons) return next();
 	for (const couponId of this.coupons) {
 		const coupon = await Coupon.findById(couponId);
