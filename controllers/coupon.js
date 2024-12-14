@@ -39,7 +39,7 @@ export const applyCoupon = async (req, res) => {
 	});
 
 	if (!coupon) {
-		throw new CustomError.NotFoundError(`Coupon is invalid`);
+		throw new CustomError.BadRequestError(`Coupon is invalid`);
 	}
 	const isCouponExpired = dayjs().date > coupon.expireAt;
 

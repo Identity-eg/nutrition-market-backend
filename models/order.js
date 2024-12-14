@@ -78,12 +78,14 @@ const orderSchema = new Schema(
 		},
 		paymobOrderId: {
 			type: String,
-			unique: true
+			unique: true,
 		},
-		coupon: {
-			type: ObjectId,
-			ref: 'Coupon',
-		},
+		coupons: [
+			{
+				type: ObjectId,
+				ref: 'Coupon',
+			},
+		],
 		paymentMethod: {
 			type: {
 				id: String,
@@ -101,10 +103,13 @@ const orderSchema = new Schema(
 );
 
 orderSchema.pre('save', async function (next) {
-	if (!this.coupon) return next();
-	const coupon = await Coupon.findById(this.coupon);
-	coupon.orders.push(this._id);
-	coupon.save();
+	console.log({ thisC: this.coupons });
+	if (!this.coupons) return next();
+	for (const couponId of this.coupons) {
+		const coupon = await Coupon.findById(couponId);
+		coupon.orders.push(this._id);
+		coupon.save();
+	}
 	next();
 });
 

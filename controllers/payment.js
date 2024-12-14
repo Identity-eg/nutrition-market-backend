@@ -41,7 +41,7 @@ export const createPayment = async (req, res) => {
 			items: cart.items.map(item => ({
 				name: item.variant.name.slice(0, 49),
 				amount: convertToCent(
-					item.variant.priceAfterDiscount || item.variant.price
+					(item.totalProductPriceAfterCoupon ?? item.totalProductPrice) / item.amount
 				),
 				quantity: item.amount,
 			})),
@@ -66,7 +66,7 @@ export const createPayment = async (req, res) => {
 				userId: user._id,
 				cartId: cart._id,
 				addressId: address._id,
-				coupon: cart.coupon,
+				coupons: cart.coupons,
 			},
 		}),
 	});

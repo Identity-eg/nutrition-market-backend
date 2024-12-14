@@ -20,7 +20,7 @@ export const createOnlineOrder = async (req, res) => {
 	const user = obj.payment_key_claims?.extra?.userId;
 	const shippingAddress = obj.payment_key_claims?.extra?.addressId;
 	const cartId = obj.payment_key_claims?.extra?.cartId;
-	const coupon = obj.payment_key_claims?.extra?.coupon;
+	const coupons = obj.payment_key_claims?.extra?.coupons;
 
 	const paymentIntentId =
 		obj.payment_key_claims?.next_payment_intention;
@@ -59,7 +59,7 @@ export const createOnlineOrder = async (req, res) => {
 		total: amount + shippingFee,
 		shippingFee,
 		paymobOrderId,
-		coupon,
+		coupons,
 		shippingAddress,
 		paymentIntentId,
 		paid: true,
@@ -152,7 +152,7 @@ export const createCashOnDeliveryOrder = async (req, res) => {
 		shippingAddress: addressId,
 		subtotal: cart.totalPriceAfterCoupon ?? cart.totalPrice,
 		total: (cart.totalPriceAfterCoupon ?? cart.totalPrice) + shippingFee,
-		coupon: cart.coupon,
+		coupons: cart.coupons,
 		shippingFee,
 		paid: false,
 		paymentMethod: {
