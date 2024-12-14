@@ -84,7 +84,7 @@ export const getAllProducts = async (req, res) => {
 	let skip = (Number(page) - 1) * Number(limit);
 
 	const comingFromDashboard =
-		req.headers['api-key'] &&
+		!!req.headers['api-key'] &&
 		req.headers['api-key'] === process.env.DASHBOARD_API_KEY;
 
 	let basePipeline = [
@@ -320,7 +320,7 @@ export const getAllProducts = async (req, res) => {
 
 // #################### Get Products for admins ######################
 export const getCompanyProducts = async (req, res) => {
-	const { id: companyId } = req.params;
+	const companyId = req.user.company;
 	let {
 		name,
 		sort,

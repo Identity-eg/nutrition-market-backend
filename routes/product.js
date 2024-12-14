@@ -23,7 +23,7 @@ router
 router.get('/offers', controllers.getOffers);
 
 router.get(
-	'/company/:id',
+	'/company',
 	authenticateUser,
 	authorizePermissions(USER_ROLES.admin),
 	controllers.getCompanyProducts
