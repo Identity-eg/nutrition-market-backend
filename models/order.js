@@ -73,7 +73,7 @@ const orderSchema = new Schema(
 		},
 		paymobOrderId: {
 			type: String,
-			unique: true
+			index: { unique: true, sparse: true }
 		},
 		paymentMethod: {
 			type: {
