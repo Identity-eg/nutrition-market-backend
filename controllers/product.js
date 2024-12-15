@@ -348,7 +348,12 @@ export const getCompanyProducts = async (req, res) => {
 				as: 'variants',
 			},
 		},
-		{ $unwind: '$variants' },
+		{
+			$unwind: {
+				path: '$variants',
+				preserveNullAndEmptyArrays: true,
+			},
+		},
 		{
 			$lookup: {
 				from: 'categories',
