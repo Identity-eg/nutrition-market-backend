@@ -7,7 +7,6 @@ import createTokenUser from '../utils/createToken.js';
 import sendEmail from '../utils/email.js';
 import {
 	REFRESH_COOKIE_OPTIONS,
-	USER_ROLES,
 	usersAllowedToAccessDashboard,
 } from '../constants/index.js';
 import {
@@ -18,11 +17,11 @@ import {
 } from 'arctic';
 import getCredFromCookies from '../utils/getCredFromCookies.js';
 import { syncCart } from '../utils/syncCart.js';
+import { sendVerificationCode } from '../utils/emails.js';
 
 // REGISTER USER #####################
 export const register = async (req, res) => {
 	const { firstName, lastName, email, password, company } = req.body;
-	const { cartId } = getCredFromCookies(req);
 
 	const emailUser = await User.findOne({ email });
 
@@ -30,19 +29,40 @@ export const register = async (req, res) => {
 		throw new CustomError.BadRequestError('Email is already taken');
 	}
 
-	const isFirstAccount = (await User.countDocuments({})) === 0;
-	const role = isFirstAccount ? USER_ROLES.superAdmin : req.body.role;
-
 	const userToBeCreated = {
 		email,
 		firstName,
 		lastName,
 		password,
-		...(role && { role }),
+		isVerified: false,
 		...(company && { company }),
 	};
 
 	const user = await User.create(userToBeCreated);
+
+	const otp = user.createOtp();
+	await user.save({ validateBeforeSave: false });
+	await sendVerificationCode({ otp });
+
+	res.redirect(`${process.env.ORIGIN_DEV_FRONTEND}/otp?usid=${user._id}`);
+};
+
+export const verifyOtp = async (req, res) => {
+	const user = await User.findOne({
+		otp: req.body.otp,
+		otpExpires: { $gt: Date.now() },
+	});
+
+	if (!user) {
+		throw new CustomError.BadRequestError('Otp is invalid or expired!');
+	}
+	const { cartId } = getCredFromCookies(req);
+
+	user.otp = undefined;
+	user.otpExpires = undefined;
+	user.isVerified = true;
+
+	await user.save({ validateBeforeSave: false });
 
 	const tokenUser = createTokenUser(user);
 	const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
@@ -103,6 +123,16 @@ export const login = async (req, res) => {
 		!usersAllowedToAccessDashboard.includes(user.role)
 	) {
 		throw new CustomError.UnauthenticatedError('Forbidden to access dashboard');
+	}
+
+	if (!user.isVerified) {
+		const otp = user.createOtp();
+		await user.save({ validateBeforeSave: false });
+		await sendVerificationCode({ otp });
+
+		return res.redirect(
+			`${process.env.ORIGIN_DEV_FRONTEND}/otp?usid=${user._id}`
+		);
 	}
 
 	const tokenUser = createTokenUser(user);
@@ -274,7 +304,7 @@ const Providers = {
 		codeVerifier: generateCodeVerifier(),
 		generateUrl() {
 			const state = generateState();
-			const scopes = ['openid', 'profile'];
+			const scopes = ['openid', 'profile', 'email'];
 			const url = new Google(
 				process.env.GOOGLE_CLIENT_ID,
 				process.env.GOOGLE_CLIENT_SECRET,
@@ -306,7 +336,13 @@ export const loginWithGoogleCallback = async (req, res) => {
 		const token = await Providers.google.generateToken({ code });
 		const idToken = token.idToken();
 		const payload = decodeIdToken(idToken);
-		const { email, given_name, family_name, sub: googleId } = payload;
+		const {
+			email,
+			email_verified,
+			given_name,
+			family_name,
+			sub: googleId,
+		} = payload;
 
 		const user = await User.findOne({ googleId });
 
@@ -314,22 +350,23 @@ export const loginWithGoogleCallback = async (req, res) => {
 
 		if (user) {
 			tokenUser = createTokenUser(user);
+			syncCart(cartId, user._id);
 		} else {
 			const userToBeCreated = {
 				googleId: googleId,
 				email,
 				firstName: given_name,
 				lastName: family_name,
+				isVerified: email_verified,
 			};
 			const user = await User.create(userToBeCreated);
 			tokenUser = createTokenUser(user);
+			syncCart(cartId, user._id);
 		}
 
 		const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
 			expiresIn: '2d',
 		});
-
-		syncCart(cartId, user._id);
 
 		res.clearCookie('cart_id');
 
@@ -339,7 +376,7 @@ export const loginWithGoogleCallback = async (req, res) => {
 			REFRESH_COOKIE_OPTIONS
 		);
 
-		res.redirect(301, 'http://localhost:3000');
+		res.redirect(`${process.env.ORIGIN_DEV_FRONTEND}`);
 	} catch (error) {
 		console.error('Error during Google authentication', error);
 		res.status(500).send('Authentication failed');

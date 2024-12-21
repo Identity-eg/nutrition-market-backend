@@ -49,6 +49,19 @@ export const getSingleUser = async (req, res) => {
 	res.status(StatusCodes.OK).json({ user });
 };
 
+// GET SINGLE USER ####################################
+export const getUserForOtp = async (req, res) => {
+	const user = await User.findOne({
+		_id: req.params.id,
+		otpExpires: { $gt: Date.now() },
+	}).select(['email']);
+
+	if (!user) {
+		throw new CustomError.NotFoundError(`No user with id : ${req.params.id}`);
+	}
+	res.status(StatusCodes.OK).json({ user });
+};
+
 // GET ME #############################################
 export const showCurrentUser = async (req, res) => {
 	const user = await User.findById(req.user._id)

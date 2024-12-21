@@ -9,6 +9,7 @@ import {
 	blockUser,
 	getAllUsers,
 	getSingleUser,
+	getUserForOtp,
 	showCurrentUser,
 	updateUser,
 	updateUserPassword,
@@ -32,9 +33,12 @@ router.patch(
 	blockUser
 );
 
+router.route('/otp/:id').get(getUserForOtp);
+
 router
 	.route('/:id')
 	.get(authenticateUser, getSingleUser)
+
 	.patch(authenticateUser, updateUser);
 
 export default router;
