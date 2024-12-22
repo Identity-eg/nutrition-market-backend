@@ -3,6 +3,7 @@ import pkg from 'validator';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { USER_ROLES } from '../constants/index.js';
+import generateOtp from '../utils/generateOtp.js';
 
 const { model, Schema } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -70,6 +71,10 @@ const userSchema = new Schema(
 			type: Boolean,
 			default: false,
 		},
+		isVerified: {
+			type: Boolean,
+			default: false,
+		},
 		ordersCount: { type: Number, default: 0 },
 		purchasedProducts: {
 			type: [
@@ -80,13 +85,17 @@ const userSchema = new Schema(
 			],
 			default: [],
 		},
+
+		otp: String,
+		otpExpires: Date,
+
 		resetPasswordToken: String,
 		resetPasswordTokenExpiration: Date,
 	},
 	{
 		methods: {
 			comparePassword: async function (enteredPassword) {
-				return await bcrypt.compare(enteredPassword, this.password);
+				return bcrypt.compare(enteredPassword, this.password);
 			},
 			createResetPasswordToken: function () {
 				const resetToken = crypto.randomBytes(32).toString('hex');
@@ -97,6 +106,12 @@ const userSchema = new Schema(
 
 				this.resetPasswordTokenExpiration = Date.now() + 10 * 60 * 1000;
 				return resetToken;
+			},
+			createOtp: function () {
+				const otp = generateOtp();
+				this.otp = otp;
+				this.otpExpires = Date.now() + 3 * 60 * 1000;
+				return otp;
 			},
 		},
 		timestamps: true,

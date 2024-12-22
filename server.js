@@ -9,22 +9,22 @@ import connectDb from './config/db.js';
 // import ngrok from 'ngrok';
 
 // import Routes
-import authRoutes from './routes/auth.js';
-import uploadRoutes from './routes/upload.js';
-import productRoutes from './routes/product.js';
-import variantRoutes from './routes/variant.js';
-import cartRoutes from './routes/cart.js';
-import userRoutes from './routes/user.js';
-import reviewRoutes from './routes/review.js';
-import orderRoutes from './routes/order.js';
-import categoryRoutes from './routes/category.js';
-import subCategoryRoutes from './routes/sub-category.js';
-import companyRoutes from './routes/company.js';
-import dosageFormRoutes from './routes/dosageForm.js';
-import imageRoutes from './routes/image.js';
-import paymentRoutes from './routes/payment.js';
-import addressRoutes from './routes/address.js';
-import statisticsRoutes from './routes/statistics.js';
+import authRoutes from './routes/auth.route.js';
+import uploadRoutes from './routes/upload.route.js';
+import productRoutes from './routes/product.route.js';
+import variantRoutes from './routes/variant.route.js';
+import cartRoutes from './routes/cart.route.js';
+import userRoutes from './routes/user.route.js';
+import reviewRoutes from './routes/review.route.js';
+import orderRoutes from './routes/order.route.js';
+import categoryRoutes from './routes/category.route.js';
+// import subCategoryRoutes from './routes/sub-category.js';
+import companyRoutes from './routes/company.route.js';
+import dosageFormRoutes from './routes/dosageForm.route.js';
+import imageRoutes from './routes/image.route.js';
+import paymentRoutes from './routes/payment.route.js';
+import addressRoutes from './routes/address.route.js';
+import statisticsRoutes from './routes/statistics.route.js';
 
 // import custom Middlewares
 import trim from './middlewares/trim.js';
@@ -71,7 +71,7 @@ app.use('/api/carts', cartRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/sub-categories', subCategoryRoutes);
+// app.use('/api/sub-categories', subCategoryRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/dosage-forms', dosageFormRoutes);
 app.use('/api/images', imageRoutes);
