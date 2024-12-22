@@ -39,7 +39,7 @@ export const getAllUsers = async (req, res) => {
 	});
 };
 
-// GET SINGLE USER ####################################
+// ################################################################
 export const getSingleUser = async (req, res) => {
 	const user = await User.findOne({ _id: req.params.id }).select('-password');
 	if (!user) {
@@ -49,8 +49,8 @@ export const getSingleUser = async (req, res) => {
 	res.status(StatusCodes.OK).json({ user });
 };
 
-// GET SINGLE USER ####################################
-export const getUserForOtp = async (req, res) => {
+// ################################################################
+export const getUserForVerification = async (req, res) => {
 	const user = await User.findOne({
 		_id: req.params.id,
 		otpExpires: { $gt: Date.now() },
@@ -62,7 +62,7 @@ export const getUserForOtp = async (req, res) => {
 	res.status(StatusCodes.OK).json({ user });
 };
 
-// GET ME #############################################
+// ################################################################
 export const showCurrentUser = async (req, res) => {
 	const user = await User.findById(req.user._id)
 		.select('-password')
@@ -70,7 +70,7 @@ export const showCurrentUser = async (req, res) => {
 	res.status(StatusCodes.OK).json({ user });
 };
 
-// UPDATE USER ########################################
+// ################################################################
 export const updateUser = async (req, res) => {
 	const { id } = req.params;
 	const { email, firstName, lastName, mobileNumber } = req.body;
@@ -87,7 +87,7 @@ export const updateUser = async (req, res) => {
 		.json({ msg: 'User updated successfully', user: updatedUser });
 };
 
-// BLOCK USER #########################################
+// ################################################################
 export const blockUser = async (req, res) => {
 	const { id, blocked } = req.body;
 
@@ -100,8 +100,7 @@ export const blockUser = async (req, res) => {
 	res.status(StatusCodes.OK).json({ msg: 'User updated successfully' });
 };
 
-// UPDATE USER PASSWORD ###############################
-
+// ################################################################
 export const updateUserPassword = async (req, res) => {
 	const { oldPassword, newPassword } = req.body;
 	if (!oldPassword || !newPassword) {

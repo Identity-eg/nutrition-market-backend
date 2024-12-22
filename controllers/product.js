@@ -13,6 +13,7 @@ import Cart from '../models/cart.js';
 
 import CustomError from '../errors/index.js';
 import { USER_ROLES } from '../constants/index.js';
+import { authorizeCompany } from '../utils/authorizeCompany.js';
 
 export const createProduct = async (req, res) => {
 	if (!req.body.company) {
@@ -542,15 +543,7 @@ export const updateProduct = async (req, res) => {
 		throw new CustomError.NotFoundError(`No product with id : ${productId}`);
 	}
 
-	const myOwnProduct =
-		req.user.role === USER_ROLES.admin
-			? req.user.company.toString() === product.company.toString()
-			: true;
-	if (!myOwnProduct) {
-		throw new CustomError.UnauthenticatedError(
-			"You don't have access to do this action"
-		);
-	}
+	authorizeCompany({ admin: req.user, productCompany: product.company });
 
 	const session = await mongoose.startSession();
 	session.startTransaction();

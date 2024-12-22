@@ -3,8 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import crypto from 'crypto';
 import User from '../models/user.js';
 import CustomError from '../errors/index.js';
-import createTokenUser from '../utils/createToken.js';
-import sendEmail from '../utils/email.js';
+import { sendEmail } from '../utils/email.js';
 import {
 	REFRESH_COOKIE_OPTIONS,
 	usersAllowedToAccessDashboard,
@@ -18,8 +17,11 @@ import {
 import getCredFromCookies from '../utils/getCredFromCookies.js';
 import { syncCart } from '../utils/syncCart.js';
 import { sendVerificationCode } from '../utils/emails.js';
+import {
+	createAccessToken,
+	createRefreshToken,
+} from '../utils/createTokens.js';
 
-// REGISTER USER #####################
 export const register = async (req, res) => {
 	const { firstName, lastName, email, password, company } = req.body;
 
@@ -39,7 +41,6 @@ export const register = async (req, res) => {
 	};
 
 	const user = await User.create(userToBeCreated);
-
 	const otp = user.createOtp();
 	await user.save({ validateBeforeSave: false });
 	await sendVerificationCode({ otp });
@@ -47,7 +48,7 @@ export const register = async (req, res) => {
 	res.redirect(`${process.env.ORIGIN_DEV_FRONTEND}/otp?usid=${user._id}`);
 };
 
-export const verifyOtp = async (req, res) => {
+export const verifyEmail = async (req, res) => {
 	const user = await User.findOne({
 		otp: req.body.otp,
 		otpExpires: { $gt: Date.now() },
@@ -64,19 +65,13 @@ export const verifyOtp = async (req, res) => {
 
 	await user.save({ validateBeforeSave: false });
 
-	const tokenUser = createTokenUser(user);
-	const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-		expiresIn: '1d',
-	});
-	const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
-		expiresIn: '2d',
-	});
+	const accessToken = createAccessToken(user);
+	const refreshToken = createRefreshToken(user);
 
 	syncCart(cartId, user._id);
 
 	res.clearCookie('cart_id');
 
-	// Create secure cookies
 	res.cookie(
 		process.env.REFRESH_TOKEN_NAME,
 		refreshToken,
@@ -86,7 +81,7 @@ export const verifyOtp = async (req, res) => {
 	res.status(StatusCodes.CREATED).json({ accessToken, refreshToken });
 };
 
-// LOGIN USER ########################
+// ################################################################
 export const login = async (req, res) => {
 	const { email, password } = req.body;
 	const { cartId } = getCredFromCookies(req);
@@ -105,7 +100,7 @@ export const login = async (req, res) => {
 		throw new CustomError.UnauthenticatedError('Invalid Credentials');
 	}
 	if (user.googleId) {
-		throw new CustomError.BadRequestError('This email is already exist');
+		throw new CustomError.BadRequestError('This email is already existed.');
 	}
 
 	const isPasswordMatches = await user.comparePassword(password);
@@ -135,13 +130,8 @@ export const login = async (req, res) => {
 		);
 	}
 
-	const tokenUser = createTokenUser(user);
-	const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-		expiresIn: '1d',
-	});
-	const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
-		expiresIn: '2d',
-	});
+	const accessToken = createAccessToken(user);
+	const refreshToken = createRefreshToken(user);
 
 	syncCart(cartId, user._id);
 
@@ -158,7 +148,7 @@ export const login = async (req, res) => {
 	res.status(StatusCodes.OK).json({ accessToken, refreshToken });
 };
 
-// REFRESH TOKEN #####################
+// ################################################################
 export const refresh = async (req, res) => {
 	const comingFromDashboard =
 		req.headers['api-key'] &&
@@ -184,10 +174,7 @@ export const refresh = async (req, res) => {
 		const user = await User.findById(userId);
 		if (!user) throw new CustomError.UnauthenticatedError('Unauthorized');
 
-		const tokenUser = createTokenUser(user);
-		const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-			expiresIn: '1d',
-		});
+		const accessToken = createAccessToken(user);
 
 		return res.json({ accessToken });
 	} catch (error) {
@@ -195,7 +182,7 @@ export const refresh = async (req, res) => {
 	}
 };
 
-// LOGOUT ############################
+// ################################################################
 export const logout = (req, res) => {
 	const comingFromDashboard =
 		req.headers['api-key'] &&
@@ -212,7 +199,7 @@ export const logout = (req, res) => {
 	res.json({ message: 'Cookie cleared' });
 };
 
-// FORGOT PASSWORD ########################################
+// ################################################################
 export const forgotPassword = async (req, res) => {
 	const { email } = req.body;
 	if (!email) {
@@ -253,7 +240,7 @@ export const forgotPassword = async (req, res) => {
 	}
 };
 
-// RESET PASSWORD ########################################
+// ################################################################
 export const resetPassword = async (req, res) => {
 	const { password, confirmPassword } = req.body;
 	const matched = password === confirmPassword;
@@ -280,13 +267,8 @@ export const resetPassword = async (req, res) => {
 	user.resetPasswordTokenExpiration = undefined;
 	await user.save();
 
-	// const tokenUser = createTokenUser(user);
-	// const accessToken = jwt.sign(tokenUser, process.env.ACCESS_TOKEN_SECRET, {
-	//   expiresIn: '30m',
-	// });
-	// const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
-	//   expiresIn: '1d',
-	// });
+	// const accessToken = createAccessToken(user)
+	// const refreshToken = createRefreshToken(user)
 
 	// // Create secure cookies
 	// res.cookie(
@@ -323,11 +305,13 @@ const Providers = {
 	},
 };
 
+// ################################################################
 export const loginWithGoogle = async (req, res) => {
 	const url = Providers.google.generateUrl();
 	res.status(StatusCodes.OK).json({ url: url.href });
 };
 
+// ################################################################
 export const loginWithGoogleCallback = async (req, res) => {
 	const { code } = req.query;
 	const { cartId } = getCredFromCookies(req);
@@ -349,7 +333,7 @@ export const loginWithGoogleCallback = async (req, res) => {
 		let tokenUser;
 
 		if (user) {
-			tokenUser = createTokenUser(user);
+			tokenUser = user;
 			syncCart(cartId, user._id);
 		} else {
 			const userToBeCreated = {
@@ -360,13 +344,11 @@ export const loginWithGoogleCallback = async (req, res) => {
 				isVerified: email_verified,
 			};
 			const user = await User.create(userToBeCreated);
-			tokenUser = createTokenUser(user);
+			tokenUser = user;
 			syncCart(cartId, user._id);
 		}
 
-		const refreshToken = jwt.sign(tokenUser, process.env.REFRESH_TOKEN_SECRET, {
-			expiresIn: '2d',
-		});
+		const refreshToken = createRefreshToken(tokenUser);
 
 		res.clearCookie('cart_id');
 

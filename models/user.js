@@ -95,7 +95,7 @@ const userSchema = new Schema(
 	{
 		methods: {
 			comparePassword: async function (enteredPassword) {
-				return await bcrypt.compare(enteredPassword, this.password);
+				return bcrypt.compare(enteredPassword, this.password);
 			},
 			createResetPasswordToken: function () {
 				const resetToken = crypto.randomBytes(32).toString('hex');

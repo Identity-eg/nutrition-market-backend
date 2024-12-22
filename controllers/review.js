@@ -3,12 +3,22 @@ import { StatusCodes } from 'http-status-codes';
 
 import Review from '../models/review.js';
 import Product from '../models/product.js';
+import User from '../models/user.js';
 import CustomError from '../errors/index.js';
 import { checkPermissions } from '../utils/index.js';
 
 // ################# Create Review #################
 export const createReview = async (req, res) => {
 	const { product: productId } = req.body;
+
+	const user = await User.findById(req.user._id);
+	const isPurchaser = user.purchasedProducts.some(id => id === productId);
+
+	if (!isPurchaser) {
+		throw new CustomError.BadRequestError(
+			'You must purchase the product to review'
+		);
+	}
 
 	const isValidProduct = await Product.findOne({ _id: productId });
 
@@ -23,7 +33,7 @@ export const createReview = async (req, res) => {
 
 	if (alreadySubmitted) {
 		throw new CustomError.BadRequestError(
-			'Already submitted review for this product'
+			"You've Already submitted review for this product"
 		);
 	}
 
