@@ -45,7 +45,9 @@ export const register = async (req, res) => {
 	await user.save({ validateBeforeSave: false });
 	await sendVerificationCode({ otp });
 
-	res.redirect(`${process.env.ORIGIN_DEV_FRONTEND}/otp?usid=${user._id}`);
+	res.redirect(
+		`${process.env.ORIGIN_DEV_FRONTEND}/verify-email?usid=${user._id}`
+	);
 };
 
 export const verifyEmail = async (req, res) => {
@@ -126,7 +128,7 @@ export const login = async (req, res) => {
 		await sendVerificationCode({ otp });
 
 		return res.redirect(
-			`${process.env.ORIGIN_DEV_FRONTEND}/otp?usid=${user._id}`
+			`${process.env.ORIGIN_DEV_FRONTEND}/verify-email?usid=${user._id}`
 		);
 	}
 

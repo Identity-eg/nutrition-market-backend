@@ -29,7 +29,7 @@ router.patch(
 	controllers.blockUser
 );
 
-router.route('/otp/:id').get(controllers.getUserForVerification);
+router.route('/verify-email/:id').get(controllers.getUserForVerification);
 
 router
 	.route('/:id')
