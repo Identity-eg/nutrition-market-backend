@@ -7,7 +7,7 @@ const variantSchema = new Schema(
 	{
 		product: {
 			type: ObjectId,
-			ref: 'Company',
+			ref: 'Product',
 			required: [true, 'Please provide relevant product'],
 		},
 		name: {

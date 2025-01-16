@@ -8,9 +8,14 @@ const { ObjectId } = Schema.Types;
 
 const productSchema = new Schema(
 	{
-		name: {
+		name_en: {
 			type: String,
-			required: [true, 'Please provide product name'],
+			required: [true, 'Please provide product English name'],
+			maxlength: [100, 'Name can not be more than 100 characters'],
+		},
+		name_ar: {
+			type: String,
+			required: [true, 'Please provide product Arabic name'],
 			maxlength: [100, 'Name can not be more than 100 characters'],
 		},
 		slug: {
@@ -18,9 +23,13 @@ const productSchema = new Schema(
 			required: [true, 'Please provide product slug'],
 			unique: [true, 'Product name already exists'],
 		},
-		description: {
+		description_en: {
 			type: String,
-			required: [true, 'Please provide product description'],
+			required: [true, 'Please provide product English description'],
+		},
+		description_ar: {
+			type: String,
+			required: [true, 'Please provide product Arabic description'],
 		},
 		nutritionFacts: {
 			type: {

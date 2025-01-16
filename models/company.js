@@ -4,18 +4,26 @@ const { model, Schema } = mongoose;
 
 const companySchema = new Schema(
 	{
-		name: {
+		name_en: {
 			type: String,
-			required: [true, 'Please provide company name'],
+			required: [true, 'Please provide company English name'],
+		},
+		name_ar: {
+			type: String,
+			required: [true, 'Please provide company Arabic name'],
 		},
 		slug: {
 			type: String,
 			unique: true,
 			required: true,
 		},
-		description: {
+		description_en: {
 			type: String,
-			required: true,
+			required: [true, 'Please provide company English description'],
+		},
+		description_ar: {
+			type: String,
+			required: [true, 'Please provide company Arabic description'],
 		},
 		logo: {
 			type: {
