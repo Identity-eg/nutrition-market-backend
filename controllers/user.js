@@ -73,13 +73,13 @@ export const showCurrentUser = async (req, res) => {
 // ################################################################
 export const updateUser = async (req, res) => {
 	const { id } = req.params;
-	const { email, firstName, lastName, mobileNumber } = req.body;
+	const { email, firstName, lastName, phoneNumber } = req.body;
 
 	chechPermissions(req.user, id);
 
 	const updatedUser = await User.findOneAndUpdate(
 		{ _id: id },
-		{ email, firstName, lastName, mobileNumber },
+		{ email, firstName, lastName, phoneNumber },
 		{ runValidators: true }
 	);
 	res

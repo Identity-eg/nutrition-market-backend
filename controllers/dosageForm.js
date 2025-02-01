@@ -5,7 +5,7 @@ import slugify from 'slugify';
 
 // ################# Create DosageForm #################
 export const createDosageForm = async (req, res) => {
-	req.body.slug = slugify(req.body.name, { lower: true });
+	req.body.slug = slugify(req.body.name_en, { lower: true });
 
 	const dosageForm = await DosageForm.create(req.body);
 	res.status(StatusCodes.CREATED).json({ dosageForm });
@@ -34,8 +34,8 @@ export const getSingleDosageForm = async (req, res) => {
 export const updateDosageForm = async (req, res) => {
 	const { id: dosageFormId } = req.params;
 
-	if (req.body.name) {
-		req.body.slug = slugify(req.body.name, { lower: true });
+	if (req.body.name_en) {
+		req.body.slug = slugify(req.body.name_en, { lower: true });
 	}
 
 	const dosageForm = await DosageForm.findOneAndUpdate(

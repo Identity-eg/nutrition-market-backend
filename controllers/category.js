@@ -5,7 +5,7 @@ import slugify from 'slugify';
 
 // ################# Create Category #################
 export const createCategory = async (req, res) => {
-	req.body.slug = slugify(req.body.name, { lower: true });
+	req.body.slug = slugify(req.body.name_en, { lower: true });
 
 	const category = await Category.create(req.body);
 	res.status(StatusCodes.CREATED).json({ category });
@@ -46,8 +46,8 @@ export const getSingleCategoryBySlug = async (req, res) => {
 export const updateCategory = async (req, res) => {
 	const { id: categoryId } = req.params;
 
-	if (req.body.name) {
-		req.body.slug = slugify(req.body.name, { lower: true });
+	if (req.body.name_en) {
+		req.body.slug = slugify(req.body.name_en, { lower: true });
 	}
 
 	const category = await Category.findOneAndUpdate(

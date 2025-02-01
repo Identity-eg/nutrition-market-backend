@@ -13,7 +13,7 @@ router.get('/logout', controllers.logout);
 router.get('/refresh', controllers.refresh);
 
 router.post('/forgot-password', controllers.forgotPassword);
-router.put('/reset-password/:token', controllers.resetPassword);
+router.patch('/reset-password/:token', controllers.resetPassword);
 
 router.get('/google', controllers.loginWithGoogle);
 router.get('/google/callback', controllers.loginWithGoogleCallback);

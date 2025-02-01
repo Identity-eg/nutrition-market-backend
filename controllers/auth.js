@@ -3,7 +3,6 @@ import { StatusCodes } from 'http-status-codes';
 import crypto from 'crypto';
 import User from '../models/user.js';
 import CustomError from '../errors/index.js';
-import { sendEmail } from '../utils/email.js';
 import {
 	REFRESH_COOKIE_OPTIONS,
 	usersAllowedToAccessDashboard,
@@ -16,7 +15,10 @@ import {
 } from 'arctic';
 import getCredFromCookies from '../utils/getCredFromCookies.js';
 import { syncCart } from '../utils/syncCart.js';
-import { sendVerificationCode } from '../utils/emails.js';
+import {
+	sendPasswordResetToken,
+	sendVerificationCode,
+} from '../utils/emails.js';
 import {
 	createAccessToken,
 	createRefreshToken,
@@ -48,39 +50,6 @@ export const register = async (req, res) => {
 	res.redirect(
 		`${process.env.ORIGIN_DEV_FRONTEND}/verify-email?usid=${user._id}`
 	);
-};
-
-export const verifyEmail = async (req, res) => {
-	const user = await User.findOne({
-		otp: req.body.otp,
-		otpExpires: { $gt: Date.now() },
-	});
-
-	if (!user) {
-		throw new CustomError.BadRequestError('Otp is invalid or expired!');
-	}
-	const { cartId } = getCredFromCookies(req);
-
-	user.otp = undefined;
-	user.otpExpires = undefined;
-	user.isVerified = true;
-
-	await user.save({ validateBeforeSave: false });
-
-	const accessToken = createAccessToken(user);
-	const refreshToken = createRefreshToken(user);
-
-	syncCart(cartId, user._id);
-
-	res.clearCookie('cart_id');
-
-	res.cookie(
-		process.env.REFRESH_TOKEN_NAME,
-		refreshToken,
-		REFRESH_COOKIE_OPTIONS
-	);
-
-	res.status(StatusCodes.CREATED).json({ accessToken, refreshToken });
 };
 
 // ################################################################
@@ -210,25 +179,19 @@ export const forgotPassword = async (req, res) => {
 
 	const user = await User.findOne({ email });
 	if (!user) {
-		throw new CustomError.NotFoundError(
+		throw new CustomError.BadRequestError(
 			'There is no User with this email address'
 		);
 	}
 
 	const resetToken = user.createResetPasswordToken();
+
 	await user.save();
 
 	const resetUrl = `${process.env.ORIGIN_DEV_FRONTEND}/reset-password/${resetToken}`;
 
-	const message = `message`;
-
 	try {
-		await sendEmail({
-			to: email,
-			subject: 'Your Password Reset token (valid for 10 minutes)',
-			message,
-			html: `<a href="${resetUrl}"></a>`,
-		});
+		await sendPasswordResetToken({ resetUrl });
 
 		res.status(StatusCodes.OK).json({ msg: 'Token sent to email' });
 	} catch (error) {
@@ -283,6 +246,41 @@ export const resetPassword = async (req, res) => {
 	res.status(StatusCodes.OK).json({ msg: 'Password updated succussfully' });
 };
 
+// ################################################################
+export const verifyEmail = async (req, res) => {
+	const user = await User.findOne({
+		otp: req.body.otp,
+		otpExpires: { $gt: Date.now() },
+	});
+
+	if (!user) {
+		throw new CustomError.BadRequestError('Otp is invalid or expired!');
+	}
+	const { cartId } = getCredFromCookies(req);
+
+	user.otp = undefined;
+	user.otpExpires = undefined;
+	user.isVerified = true;
+
+	await user.save({ validateBeforeSave: false });
+
+	const accessToken = createAccessToken(user);
+	const refreshToken = createRefreshToken(user);
+
+	syncCart(cartId, user._id);
+
+	res.clearCookie('cart_id');
+
+	res.cookie(
+		process.env.REFRESH_TOKEN_NAME,
+		refreshToken,
+		REFRESH_COOKIE_OPTIONS
+	);
+
+	res.status(StatusCodes.CREATED).json({ accessToken, refreshToken });
+};
+
+// ################################################################
 const Providers = {
 	google: {
 		codeVerifier: generateCodeVerifier(),
@@ -306,8 +304,6 @@ const Providers = {
 		},
 	},
 };
-
-// ################################################################
 export const loginWithGoogle = async (req, res) => {
 	const url = Providers.google.generateUrl();
 	res.status(StatusCodes.OK).json({ url: url.href });

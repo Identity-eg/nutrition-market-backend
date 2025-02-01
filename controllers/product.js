@@ -20,9 +20,9 @@ export const createProduct = async (req, res) => {
 		req.body.company = req.user.company;
 	}
 
-	req.body.name =
-		req.body.name.slice(0, 1).toLowerCase() + req.body.name.slice(1);
-	req.body.slug = slugify(req.body.name, { lower: true });
+	req.body.name_en =
+		req.body.name_en.slice(0, 1).toLowerCase() + req.body.name_en.slice(1);
+	req.body.slug = slugify(req.body.name_en, { lower: true });
 
 	const session = await mongoose.startSession();
 	try {
@@ -557,7 +557,7 @@ export const updateProduct = async (req, res) => {
 		if (req.body.name) {
 			req.body.name =
 				req.body.name.slice(0, 1).toLowerCase() + req.body.name.slice(1);
-			req.body.slug = slugify(req.body.name, { lower: true });
+			req.body.slug = slugify(req.body.name_en, { lower: true });
 			const variants = await Variant.find({ product: product._id });
 			await Promise.all(
 				variants.map(variant => {

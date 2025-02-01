@@ -4,9 +4,10 @@ import dotenv from 'dotenv';
 import { v2 as cloudinary } from 'cloudinary';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+// import i18next from 'i18next';
 
 import connectDb from './config/db.js';
-// import ngrok from 'ngrok';
+// import './config/i18n.js';
 
 // import Routes
 import authRoutes from './routes/auth.route.js';
@@ -31,6 +32,7 @@ import trim from './middlewares/trim.js';
 import notFoundMiddleware from './middlewares/not-found.js';
 import errorHandlerMiddleware from './middlewares/error-handler.js';
 import { getGovernorateCities, getGovernorates } from './controllers/egypt.js';
+// import i18nMiddleware from 'i18next-http-middleware';
 
 process.on('uncaughtException', err => {
 	console.log(err.name, err.message);
@@ -57,6 +59,7 @@ app.use(
 		origin: [process.env.ORIGIN_DEV_FRONTEND, process.env.ORIGIN_DEV_DASHBOARD],
 	})
 );
+// app.use(i18nMiddleware.handle(i18next));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(trim);

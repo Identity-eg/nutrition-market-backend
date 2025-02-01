@@ -31,15 +31,15 @@ const userSchema = new Schema(
 			lowercase: true,
 			validate: [isEmail, 'Please provide a valid email'],
 		},
-		mobileNumber: {
+		phoneNumber: {
 			type: String,
 			minlength: [
 				11,
-				'Please provide a valid mobile number starts with 01 and eleven number',
+				'Please provide a valid phone number starts with 01 and eleven number',
 			],
 			maxlength: [
 				11,
-				'Please provide a valid mobile number starts with 01 and eleven number',
+				'Please provide a valid phone number starts with 01 and eleven number',
 			],
 		},
 		password: {

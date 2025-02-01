@@ -5,7 +5,7 @@ import slugify from 'slugify';
 
 // ################# Create Sub Category #################
 export const createSubCategory = async (req, res) => {
-	req.body.slug = slugify(req.body.name);
+	req.body.slug = slugify(req.body.name_en);
 
 	const subCategory = await SubCategory.create(req.body);
 	res.status(StatusCodes.CREATED).json({ subCategory });

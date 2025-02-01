@@ -6,7 +6,7 @@ import { USER_ROLES } from '../constants/index.js';
 
 // ################# Create Company #################
 export const createCompany = async (req, res) => {
-	req.body.slug = slugify(req.body.name, { lower: true });
+	req.body.slug = slugify(req.body.name_en, { lower: true });
 
 	const company = await Company.create(req.body);
 	res.status(StatusCodes.CREATED).json({ company });
@@ -55,8 +55,8 @@ export const updateCompany = async (req, res) => {
 			'Unauthorized to access this route'
 		);
 	}
-	if (req.body.name) {
-		req.body.slug = slugify(req.body.name, { lower: true });
+	if (req.body.name_en) {
+		req.body.slug = slugify(req.body.name_en, { lower: true });
 	}
 
 	const company = await Company.findOneAndUpdate({ _id: companyId }, req.body, {
