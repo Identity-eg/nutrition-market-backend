@@ -34,12 +34,12 @@ const address = new Schema({
 	},
 
 	phone: {
-		type: Number,
+		type: String,
 		required: [true, 'Please provide phone'],
 	},
 
 	additionalPhone: {
-		type: Number,
+		type: String,
 		required: [true, 'Please provide additional phone'],
 	},
 

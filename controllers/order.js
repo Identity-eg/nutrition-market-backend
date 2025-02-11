@@ -21,8 +21,7 @@ export const createOnlineOrder = async (req, res) => {
 	const shippingAddress = obj.payment_key_claims?.extra?.addressId;
 	const cartId = obj.payment_key_claims?.extra?.cartId;
 
-	const paymentIntentId =
-		obj.payment_key_claims?.next_payment_intention;
+	const paymentIntentId = obj.payment_key_claims?.next_payment_intention;
 	const amount = convertToPound(obj?.amount_cents);
 	const paymentMethodId = obj?.integration_id;
 	const isSuccess = obj?.success;

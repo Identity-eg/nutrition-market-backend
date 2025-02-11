@@ -33,9 +33,8 @@ export const createPayment = async (req, res) => {
 		body: JSON.stringify({
 			amount: convertToCent(cart.totalPrice),
 			currency: 'EGP',
-			notification_url:
-				'https://d667-156-223-222-158.ngrok-free.app/api/orders',
-			redirection_url: `https://d667-156-223-222-158.ngrok-free.app/api/payment/after-payment`,
+			notification_url: `${process.env.ORIGIN_PROD_BACKEND}/api/orders`,
+			redirection_url: `${process.env.ORIGIN_PROD_BACKEND}/api/payment/after-payment`,
 			payment_methods: [+req.body.paymentMethodId],
 
 			items: cart.items.map(item => ({
@@ -82,7 +81,7 @@ export const afterPayment = async (req, res) => {
 	const source_data_pan = req.query['source_data.pan'];
 	const source_data_sub_type = req.query['source_data.sub_type'];
 	const source_data_type = req.query['source_data.type'];
-	
+
 	const {
 		amount_cents,
 		created_at,
